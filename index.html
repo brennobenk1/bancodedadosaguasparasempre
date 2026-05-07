@@ -1,0 +1,2588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Águas para Sempre — Gestão Documental</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<style>
+/* ===== VARIABLES ===== */
+:root {
+  --primary: #063D5C;
+  --primary-light: #0A5C88;
+  --accent: #00B4D8;
+  --accent-2: #0096C7;
+  --teal: #48CAE4;
+  --teal-light: #ADE8F4;
+  --success: #2CB87A;
+  --danger: #E85D4A;
+  --warning: #F4A228;
+  --surface: #F4F9FC;
+  --surface-2: #EAF4F9;
+  --white: #FFFFFF;
+  --dark: #0D2535;
+  --mid: #2A4A5E;
+  --muted: #6B8A9A;
+  --border: #C8DDE8;
+  --shadow-sm: 0 1px 4px rgba(6,61,92,0.08);
+  --shadow: 0 4px 20px rgba(6,61,92,0.12);
+  --shadow-lg: 0 12px 48px rgba(6,61,92,0.18);
+  --radius: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --font-heading: 'Sora', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--surface);
+  color: var(--dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--teal-light); border-radius: 10px; }
+
+/* ===== HEADER ===== */
+.header {
+  background: var(--primary);
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(6,61,92,0.3);
+}
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-logo-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--teal));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.header-title {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: -0.2px;
+}
+.header-sub {
+  font-size: 11px;
+  color: var(--teal-light);
+  font-weight: 400;
+  opacity: 0.8;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.onedrive-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  font-family: var(--font-body);
+}
+.onedrive-badge:hover { background: rgba(255,255,255,0.18); }
+.onedrive-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ccc;
+}
+.onedrive-badge .dot.connected { background: var(--success); box-shadow: 0 0 6px var(--success); }
+
+/* ===== PAGE SYSTEM ===== */
+.page { display: none; animation: fadeSlideIn 0.28s ease; }
+.page.active { display: block; }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== MAIN WRAPPER ===== */
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+/* ===== HOME PAGE ===== */
+.home-hero {
+  text-align: center;
+  padding: 48px 0 40px;
+}
+.home-hero h1 {
+  font-family: var(--font-heading);
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -1px;
+  line-height: 1.1;
+}
+.home-hero h1 span {
+  background: linear-gradient(135deg, var(--accent), var(--teal));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.home-hero p {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+@media (max-width: 640px) { .home-cards { grid-template-columns: 1fr; } }
+.home-card {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  padding: 36px 32px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.home-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+  transform: scaleX(0);
+  transition: transform 0.28s ease;
+  transform-origin: left;
+}
+.home-card:hover { border-color: var(--teal-light); box-shadow: var(--shadow-lg); transform: translateY(-4px); }
+.home-card:hover::before { transform: scaleX(1); }
+.card-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 18px;
+}
+.card-icon.blue { background: linear-gradient(135deg, #E3F6FF, #BDE8F8); }
+.card-icon.teal { background: linear-gradient(135deg, #E0FAF5, #B5F0E5); }
+.card-icon.orange { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); }
+.card-icon.purple { background: linear-gradient(135deg, #F0E8FF, #DDD0FF); }
+.home-card h3 {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+.home-card p {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.home-card .card-arrow {
+  position: absolute;
+  bottom: 20px;
+  right: 24px;
+  font-size: 20px;
+  color: var(--teal);
+  opacity: 0;
+  transition: var(--transition);
+}
+.home-card:hover .card-arrow { opacity: 1; transform: translateX(4px); }
+
+/* ===== PAGE HEADER ===== */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.btn-back {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 18px;
+  color: var(--mid);
+  flex-shrink: 0;
+}
+.btn-back:hover { background: var(--primary); border-color: var(--primary); color: var(--white); transform: translateX(-2px); }
+.page-header-text h2 {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.4px;
+}
+.page-header-text p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.page-header-actions { margin-left: auto; display: flex; gap: 10px; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.btn-primary { background: var(--primary); color: var(--white); }
+.btn-primary:hover { background: var(--primary-light); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(6,61,92,0.25); }
+.btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--white); }
+.btn-accent:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,180,216,0.35); }
+.btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--border); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,180,216,0.05); }
+.btn-danger { background: var(--danger); color: var(--white); }
+.btn-danger:hover { filter: brightness(1.1); }
+.btn-sm { padding: 7px 12px; font-size: 12.5px; border-radius: 8px; }
+.btn-icon { width: 34px; height: 34px; padding: 0; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* ===== SEARCH BAR ===== */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 24px;
+  transition: var(--transition);
+}
+.search-bar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,180,216,0.1); }
+.search-bar span { color: var(--muted); font-size: 16px; }
+.search-bar input {
+  border: none; outline: none;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--dark);
+  background: transparent;
+  flex: 1;
+}
+.search-bar input::placeholder { color: var(--muted); }
+
+/* ===== OWNER CARDS ===== */
+.owner-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.owner-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+}
+.owner-card:hover { border-color: var(--accent); box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+.owner-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+.owner-avatar {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--accent-2));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+  flex-shrink: 0;
+}
+.phase-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.phase-Interessado { background: #EFF6FF; color: #2563EB; }
+.phase-Manifesto { background: #F0FDF4; color: #16A34A; }
+.phase-Negociação { background: #FFFBEB; color: #D97706; }
+.phase-Adesão { background: #FDF4FF; color: #9333EA; }
+.owner-card h3 {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+.owner-card .matriculas-count {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.doc-progress {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--accent), var(--success));
+  transition: width 0.5s ease;
+}
+.progress-text { font-size: 11.5px; color: var(--muted); white-space: nowrap; font-weight: 500; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+}
+.empty-icon { font-size: 52px; margin-bottom: 16px; opacity: 0.5; }
+.empty-state h3 {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  color: var(--mid);
+  margin-bottom: 8px;
+}
+.empty-state p { font-size: 14px; color: var(--muted); }
+
+/* ===== OWNER DETAIL ===== */
+.owner-detail-header {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.owner-detail-avatar {
+  width: 64px; height: 64px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--primary), var(--accent-2));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--white);
+  flex-shrink: 0;
+}
+.owner-detail-info h2 {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+.owner-detail-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.meta-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* ===== MATRICULA SECTION ===== */
+.matricula-section {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.matricula-header {
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+}
+.matricula-header:hover { background: var(--surface); }
+.matricula-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.matricula-num {
+  background: linear-gradient(135deg, var(--primary), var(--accent-2));
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  letter-spacing: 0.5px;
+}
+.matricula-name { font-weight: 600; font-size: 15px; color: var(--dark); }
+.matricula-chevron { font-size: 18px; color: var(--muted); transition: transform 0.22s; }
+.matricula-section.open .matricula-chevron { transform: rotate(180deg); }
+.matricula-body { display: none; padding: 0 24px 24px; border-top: 1px solid var(--border); }
+.matricula-section.open .matricula-body { display: block; }
+
+/* ===== CHECKLIST ===== */
+.checklist-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mid);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 20px 0 12px;
+}
+.checklist { display: flex; flex-direction: column; gap: 6px; }
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid transparent;
+  transition: var(--transition);
+}
+.check-item.has-doc {
+  background: #F0FDF8;
+  border-color: rgba(44,184,122,0.2);
+}
+.check-item.missing {
+  background: #FFF5F5;
+  border-color: rgba(232,93,74,0.2);
+}
+.check-icon { font-size: 16px; flex-shrink: 0; }
+.check-label { flex: 1; font-size: 13.5px; font-weight: 500; }
+.check-item.has-doc .check-label { color: var(--success); }
+.check-item.missing .check-label { color: var(--danger); }
+.check-date { font-size: 11.5px; color: var(--muted); font-weight: 400; }
+.check-item.has-doc .check-date { color: rgba(44,184,122,0.7); }
+.check-download {
+  font-size: 12.5px;
+  color: var(--accent-2);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: var(--transition);
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+}
+.check-download:hover { background: rgba(0,180,216,0.1); }
+
+/* ===== DOCS GRID ===== */
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.doc-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.doc-card:hover { border-color: var(--accent); background: var(--white); box-shadow: var(--shadow); }
+.doc-type-icon { font-size: 28px; }
+.doc-card-name { font-size: 13px; font-weight: 600; color: var(--dark); line-height: 1.3; }
+.doc-card-meta { font-size: 11.5px; color: var(--muted); }
+
+/* ===== FORMS ===== */
+.form-group { margin-bottom: 20px; }
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mid);
+  margin-bottom: 7px;
+}
+.form-label .required { color: var(--danger); margin-left: 3px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--dark);
+  background: var(--white);
+  outline: none;
+  transition: var(--transition);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,180,216,0.1);
+}
+.form-textarea { resize: vertical; min-height: 90px; }
+.form-select { cursor: pointer; }
+
+/* ===== RADIO GROUP ===== */
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--mid);
+  user-select: none;
+}
+.radio-option input { display: none; }
+.radio-option.selected-Interessado { background: #EFF6FF; border-color: #9333EA; color: #9333EA; }
+.radio-option.selected-Manifesto { background: #F0FDF4; border-color: #148dd3; color: #148dd3; }
+.radio-option.selected-Negociação { background: #FFFBEB; border-color: #f0ec07; color: #f0ec07; }
+.radio-option.selected-Adesão { background: #FDF4FF; border-color: #08f814; color: #08f814; }
+.radio-option:not([class*="selected"]):hover { border-color: var(--teal); color: var(--accent-2); background: rgba(0,180,216,0.04); }
+
+/* ===== MATRICULA ADDER ===== */
+.matriculas-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.matricula-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.matricula-item .form-input { flex: 1; margin: 0; }
+.btn-remove-mat {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: #FFF5F5;
+  border: 1px solid rgba(232,93,74,0.3);
+  color: var(--danger);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.btn-remove-mat:hover { background: var(--danger); color: var(--white); }
+
+/* ===== MODALS ===== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(6,61,92,0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.25s ease;
+}
+.modal-lg { max-width: 700px; }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal-header {
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-header h3 {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.btn-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.btn-close:hover { background: var(--danger); color: var(--white); }
+.modal-body { padding: 24px 28px; }
+.modal-footer {
+  padding: 16px 28px 24px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* ===== DROPZONE ===== */
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--surface);
+}
+.dropzone:hover, .dropzone.dragover {
+  border-color: var(--accent);
+  background: rgba(0,180,216,0.04);
+}
+.dropzone-icon { font-size: 36px; margin-bottom: 10px; }
+.dropzone p { font-size: 14px; color: var(--muted); }
+.dropzone strong { color: var(--accent-2); }
+.dropzone input { display: none; }
+.files-preview { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.file-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--dark);
+}
+.file-preview-item span:first-child { font-size: 18px; }
+.file-preview-item .file-size { color: var(--muted); font-size: 11.5px; margin-left: auto; }
+.file-preview-item .remove-file { cursor: pointer; color: var(--danger); font-size: 16px; margin-left: 4px; }
+
+/* ===== DOC TYPE SELECT ===== */
+.doc-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.doc-type-option {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mid);
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+.doc-type-option:hover { border-color: var(--teal); color: var(--accent-2); background: rgba(0,180,216,0.04); }
+.doc-type-option.selected { background: linear-gradient(135deg, #E3F6FF, #BDE8F8); border-color: var(--accent); color: var(--primary); font-weight: 600; }
+.doc-type-option.not-required::after {
+  content: 'Opcional';
+  font-size: 10px;
+  background: var(--surface-2);
+  color: var(--muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+/* ===== SHAPES ===== */
+.shapes-categories { display: flex; flex-direction: column; gap: 16px; }
+.shapes-cat-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border);
+  overflow: hidden;
+}
+.shapes-cat-header {
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.shapes-cat-icon { font-size: 22px; }
+.shapes-cat-title { font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--primary); }
+.shapes-cat-body { padding: 16px 24px; }
+.shapes-file-list { display: flex; flex-direction: column; gap: 8px; }
+.shapes-file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+.shapes-file-item:hover { border-color: var(--teal); background: var(--white); }
+.shapes-file-icon { font-size: 22px; }
+.shapes-file-name { flex: 1; font-size: 13.5px; font-weight: 500; color: var(--dark); }
+.shapes-file-date { font-size: 11.5px; color: var(--muted); }
+.shapes-file-actions { display: flex; gap: 6px; }
+
+/* ===== TABS ===== */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  width: fit-content;
+}
+.tab-btn {
+  padding: 8px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  transition: var(--transition);
+  font-family: var(--font-body);
+}
+.tab-btn.active { background: var(--white); color: var(--primary); box-shadow: var(--shadow-sm); }
+
+/* ===== FILE VIEWER MODAL ===== */
+.file-viewer-modal { max-width: 800px; width: 100%; }
+.file-viewer-frame {
+  width: 100%;
+  min-height: 400px;
+  border: none;
+  border-radius: 10px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  padding: 40px;
+  text-align: center;
+}
+.file-viewer-frame .file-icon-big { font-size: 64px; }
+.file-viewer-frame p { font-size: 14px; color: var(--muted); max-width: 320px; }
+
+/* ===== SECTION LABEL ===== */
+.section-label {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* ===== TOAST ===== */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  background: var(--dark);
+  color: var(--white);
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn 0.25s ease;
+  border-left: 3px solid var(--success);
+}
+.toast.error { border-left-color: var(--danger); }
+.toast.info { border-left-color: var(--accent); }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ===== ONEDRIVE SETUP BANNER ===== */
+.od-banner {
+  background: linear-gradient(135deg, #E3F0FF, #CBE4FF);
+  border: 1.5px solid #93C5FD;
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.od-banner-icon { font-size: 28px; }
+.od-banner-text h4 { font-family: var(--font-heading); font-size: 14px; font-weight: 700; color: #1E40AF; }
+.od-banner-text p { font-size: 12.5px; color: #3B82F6; margin-top: 2px; }
+.od-banner-actions { margin-left: auto; }
+
+/* ===== MISC ===== */
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.ml-auto { margin-left: auto; }
+.mt-16 { margin-top: 16px; }
+.text-muted { color: var(--muted); font-size: 13px; }
+
+/* Photo/report category select */
+.category-select-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.category-option {
+  flex: 1;
+  min-width: 140px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  text-align: center;
+  transition: var(--transition);
+  user-select: none;
+}
+.category-option:hover { border-color: var(--teal); }
+.category-option.selected { background: linear-gradient(135deg, #E3F6FF, #BDE8F8); border-color: var(--accent); }
+.category-option .cat-icon { font-size: 28px; margin-bottom: 6px; }
+.category-option .cat-label { font-size: 13.5px; font-weight: 600; color: var(--mid); }
+.category-option.selected .cat-label { color: var(--primary); }
+
+/* stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  border: 1.5px solid var(--border);
+}
+.stat-value {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+}
+.stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+/* Edit-mode actions bar */
+.actions-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border: 1.5px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.actions-bar-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mid);
+  width: 100%;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Pending summary */
+.pending-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #FFF5F5;
+  color: var(--danger);
+  border: 1px solid rgba(232,93,74,0.25);
+}
+.all-done-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #F0FDF8;
+  color: var(--success);
+  border: 1px solid rgba(44,184,122,0.25);
+}
+
+/* onedrive connected label */
+.od-file-label {
+  font-size: 11px;
+  color: #3B82F6;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#063D5C 0%,#0A5C88 50%,#00B4D8 100%);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:0">
+  <div style="background:white;border-radius:24px;padding:48px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.3)">
+    <div style="width:72px;height:72px;background:linear-gradient(135deg,#00B4D8,#48CAE4);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px">💧</div>
+    <h2 style="font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:#063D5C;margin-bottom:6px">Águas para Sempre</h2>
+    <p style="font-size:13px;color:#6B8A9A;margin-bottom:8px">Gestão Documental · Águas de Joinville</p>
+    <div style="height:1px;background:#C8DDE8;margin:20px 0"></div>
+    <p style="font-size:14px;color:#2A4A5E;margin-bottom:24px;line-height:1.6">Faça login com sua <strong>conta Microsoft</strong> da Águas de Joinville para acessar o sistema e sincronizar com o SharePoint.</p>
+    <button id="loginBtn" onclick="toggleOneDriveAuth()" style="width:100%;padding:14px 20px;background:linear-gradient(135deg,#063D5C,#0A5C88);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s">
+      <span>🔐</span> Entrar com conta Microsoft
+    </button>
+    <p class="login-status" style="font-size:12px;color:#6B8A9A;margin-top:16px;min-height:18px"></p>
+    <p style="font-size:11px;color:#6B8A9A;margin-top:12px">Acesso restrito a usuários com permissão no SharePoint da equipe</p>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-logo">
+    <div class="header-logo-icon">💧</div>
+    <div>
+      <div class="header-title">Águas para Sempre</div>
+      <div class="header-sub">Gestão Documental · Águas de Joinville</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="onedrive-badge" onclick="toggleOneDriveAuth()">
+      <div class="dot" id="odDot"></div>
+      <span id="odLabel">Conectar OneDrive</span>
+    </div>
+  </div>
+</header>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ====== PAGE: HOME ====== -->
+<div class="page active" id="page-home">
+  <div class="main">
+    <div class="home-hero">
+      <h1>Sistema de<br><span>Gestão Documental</span></h1>
+      <p>Controle completo de documentos, proprietários e matrículas do programa Águas para Sempre.</p>
+    </div>
+    <div class="home-cards">
+      <div class="home-card" onclick="navigateTo('consultar')">
+        <div class="card-icon blue">🔍</div>
+        <h3>Consultar Proprietários</h3>
+        <p>Visualize documentos, checklists e pendências de cada proprietário e matrícula.</p>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="home-card" onclick="navigateTo('editar')">
+        <div class="card-icon teal">✏️</div>
+        <h3>Editar Documentos e Proprietários</h3>
+        <p>Cadastre proprietários, adicione documentos, fotos e relatórios de vistoria.</p>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="home-card" onclick="abrirMapa()">
+        <div class="card-icon orange">🗺️</div>
+        <h3>Consultar Mapa</h3>
+        <p>Abrir o mapa interativo do programa Águas para Sempre Online.</p>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="home-card" onclick="navigateTo('shapes')">
+        <div class="card-icon purple">📐</div>
+        <h3>Shapes</h3>
+        <p>Gerencie arquivos KML, shapefiles, PDFs e fotos de mapa por proprietário.</p>
+        <span class="card-arrow">→</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PAGE: CONSULTAR ====== -->
+<div class="page" id="page-consultar">
+  <div class="main">
+    <div class="page-header">
+      <div class="btn-back" onclick="navigateTo('home')">←</div>
+      <div class="page-header-text">
+        <h2>Consultar Proprietários</h2>
+        <p>Visualização e download de documentos — modo somente leitura</p>
+      </div>
+    </div>
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" placeholder="Buscar proprietário, matrícula ou fase..." id="searchConsultar" oninput="renderConsultarList()">
+    </div>
+    <div id="statsConsultar" class="stats-row"></div>
+    <div id="ownerListConsultar"></div>
+  </div>
+</div>
+
+<!-- ====== PAGE: OWNER DETAIL (Consultar) ====== -->
+<div class="page" id="page-owner-detail">
+  <div class="main">
+    <div class="page-header">
+      <div class="btn-back" onclick="navigateTo('consultar')">←</div>
+      <div class="page-header-text">
+        <h2 id="detailOwnerName">—</h2>
+        <p>Visualização de documentos e checklists</p>
+      </div>
+      <div class="page-header-actions">
+        <span id="detailPhaseBadge"></span>
+      </div>
+    </div>
+    <div id="ownerDetailContent"></div>
+  </div>
+</div>
+
+<!-- ====== PAGE: EDITAR ====== -->
+<div class="page" id="page-editar">
+  <div class="main">
+    <div class="page-header">
+      <div class="btn-back" onclick="navigateTo('home')">←</div>
+      <div class="page-header-text">
+        <h2>Editar Documentos e Proprietários</h2>
+        <p>Cadastro, edição e gerenciamento de documentos</p>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-accent" onclick="openModal('modalAddOwner')">+ Adicionar Proprietário</button>
+      </div>
+    </div>
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" placeholder="Buscar proprietário..." id="searchEditar" oninput="renderEditarList()">
+    </div>
+    <div id="ownerListEditar"></div>
+  </div>
+</div>
+
+<!-- ====== PAGE: OWNER EDITOR ====== -->
+<div class="page" id="page-owner-editor">
+  <div class="main">
+    <div class="page-header">
+      <div class="btn-back" onclick="navigateTo('editar')">←</div>
+      <div class="page-header-text">
+        <h2 id="editorOwnerName">—</h2>
+        <p>Editar documentos e informações do proprietário</p>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-outline btn-sm" onclick="openEditOwnerModal()">✏️ Editar Dados</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCurrentOwner()">🗑️ Excluir</button>
+      </div>
+    </div>
+    <div class="actions-bar">
+      <div class="actions-bar-title">Ações</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddDocModal()">📄 Adicionar Documento</button>
+      <button class="btn btn-outline btn-sm" onclick="openAddFotoModal()">📷 Adicionar Fotos</button>
+      <button class="btn btn-outline btn-sm" onclick="openAddRelatorioModal()">📋 Adicionar Relatório</button>
+    </div>
+    <div id="ownerEditorContent"></div>
+  </div>
+</div>
+
+<!-- ====== PAGE: SHAPES ====== -->
+<div class="page" id="page-shapes">
+  <div class="main">
+    <div class="page-header">
+      <div class="btn-back" onclick="navigateTo('home')">←</div>
+      <div class="page-header-text">
+        <h2>Shapes</h2>
+        <p>Arquivos geoespaciais, KML, PDFs e fotos de mapa por proprietário</p>
+      </div>
+    </div>
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" placeholder="Buscar proprietário..." id="searchShapes" oninput="renderShapesList()">
+    </div>
+    <div id="shapesOwnerList"></div>
+  </div>
+</div>
+
+<!-- ====== PAGE: SHAPES DETAIL ====== -->
+<div class="page" id="page-shapes-detail">
+  <div class="main">
+    <div class="page-header">
+      <div class="btn-back" onclick="navigateTo('shapes')">←</div>
+      <div class="page-header-text">
+        <h2 id="shapesDetailOwnerName">—</h2>
+        <p>Arquivos geoespaciais e cartográficos</p>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-accent" onclick="openAddShapeModal()">+ Adicionar Arquivo</button>
+      </div>
+    </div>
+    <div id="shapesDetailContent"></div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- MODALS -->
+<!-- ============================= -->
+
+<!-- Add Owner Modal -->
+<div class="modal-overlay" id="modalAddOwner" style="display:none" onclick="handleOverlayClick(event,'modalAddOwner')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalAddOwnerTitle">Novo Proprietário</h3>
+      <button class="btn-close" onclick="closeModal('modalAddOwner')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editingOwnerId">
+      <div class="form-group">
+        <label class="form-label">Nome <span class="required">*</span></label>
+        <input type="text" class="form-input" id="ownerNameInput" placeholder="Nome completo do proprietário">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fase <span class="required">*</span></label>
+        <div class="radio-group" id="phaseRadioGroup">
+          <label class="radio-option" onclick="selectPhase('Interessado')">
+            <input type="radio" name="phase" value="Interessado"> Interessado
+          </label>
+          <label class="radio-option" onclick="selectPhase('Manifesto')">
+            <input type="radio" name="phase" value="Manifesto"> Manifesto
+          </label>
+          <label class="radio-option" onclick="selectPhase('Negociação')">
+            <input type="radio" name="phase" value="Negociação"> Negociação
+          </label>
+          <label class="radio-option" onclick="selectPhase('Adesão')">
+            <input type="radio" name="phase" value="Adesão"> Adesão
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Matrículas <span class="required">*</span></label>
+        <div class="matriculas-list" id="matriculasList">
+          <div class="matricula-item">
+            <input type="text" class="form-input" placeholder="Número da matrícula">
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="addMatricula()" style="margin-top:6px">+ Adicionar matrícula</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalAddOwner')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveOwner()">Salvar Proprietário</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Document Modal -->
+<div class="modal-overlay" id="modalAddDoc" style="display:none" onclick="handleOverlayClick(event,'modalAddDoc')">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Adicionar Documento</h3>
+      <button class="btn-close" onclick="closeModal('modalAddDoc')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Matrícula <span class="required">*</span></label>
+        <select class="form-select" id="docMatricula">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo de Documento <span class="required">*</span></label>
+        <div class="doc-type-grid" id="docTypeGrid"></div>
+      </div>
+      <div class="form-group" id="docDiversoNameGroup" style="display:none">
+        <label class="form-label">Nome do Documento <span class="required">*</span></label>
+        <input type="text" class="form-input" id="docDiversoName" placeholder="Nome personalizado para este documento">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Arquivo <span class="required">*</span></label>
+        <div class="dropzone" id="docDropzone" onclick="document.getElementById('docFileInput').click()" ondrop="handleDrop(event,'docFileInput','docFilesPreview')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <div class="dropzone-icon">📂</div>
+          <p><strong>Clique para selecionar</strong> ou arraste o arquivo aqui</p>
+          <input type="file" id="docFileInput" onchange="handleFileChange(event,'docFilesPreview')">
+        </div>
+        <div class="files-preview" id="docFilesPreview"></div>
+        <div style="margin-top:10px">
+          <div class="od-file-label">☁️ Arquivo será armazenado no OneDrive da equipe</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalAddDoc')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveDocument()">Adicionar Documento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Foto Modal -->
+<div class="modal-overlay" id="modalAddFoto" style="display:none" onclick="handleOverlayClick(event,'modalAddFoto')">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Adicionar Fotos</h3>
+      <button class="btn-close" onclick="closeModal('modalAddFoto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Categoria <span class="required">*</span></label>
+        <div class="category-select-group">
+          <div class="category-option" onclick="selectFotoCategory('Limpeza de Fossa')" id="catFossa">
+            <div class="cat-icon">🪣</div>
+            <div class="cat-label">Limpeza de Fossa</div>
+          </div>
+          <div class="category-option" onclick="selectFotoCategory('Vistoria')" id="catVistoria">
+            <div class="cat-icon">🏠</div>
+            <div class="cat-label">Vistoria</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data <span class="required">*</span></label>
+        <input type="date" class="form-input" id="fotoData">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fotos <span class="required">*</span></label>
+        <div class="dropzone" id="fotoDropzone" onclick="document.getElementById('fotoFileInput').click()" ondrop="handleDrop(event,'fotoFileInput','fotoFilesPreview')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <div class="dropzone-icon">🖼️</div>
+          <p><strong>Clique para selecionar</strong> ou arraste as fotos aqui</p>
+          <p style="font-size:12px;margin-top:6px">Selecione múltiplas fotos simultaneamente</p>
+          <input type="file" id="fotoFileInput" multiple accept="image/*" onchange="handleFileChange(event,'fotoFilesPreview')">
+        </div>
+        <div class="files-preview" id="fotoFilesPreview"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalAddFoto')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveFotos()">Adicionar Fotos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Relatorio Modal -->
+<div class="modal-overlay" id="modalAddRelatorio" style="display:none" onclick="handleOverlayClick(event,'modalAddRelatorio')">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Adicionar Relatório de Vistoria</h3>
+      <button class="btn-close" onclick="closeModal('modalAddRelatorio')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Categoria <span class="required">*</span></label>
+        <div class="category-select-group">
+          <div class="category-option" onclick="selectRelatorioCategory('Limpeza de Fossa')" id="catRelFossa">
+            <div class="cat-icon">🪣</div>
+            <div class="cat-label">Limpeza de Fossa</div>
+          </div>
+          <div class="category-option" onclick="selectRelatorioCategory('Vistoria')" id="catRelVistoria">
+            <div class="cat-icon">📋</div>
+            <div class="cat-label">Vistoria</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data <span class="required">*</span></label>
+        <input type="date" class="form-input" id="relatorioData">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Arquivos <span class="required">*</span></label>
+        <div class="dropzone" onclick="document.getElementById('relatorioFileInput').click()" ondrop="handleDrop(event,'relatorioFileInput','relatorioFilesPreview')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <div class="dropzone-icon">📋</div>
+          <p><strong>Clique para selecionar</strong> ou arraste os arquivos aqui</p>
+          <input type="file" id="relatorioFileInput" multiple onchange="handleFileChange(event,'relatorioFilesPreview')">
+        </div>
+        <div class="files-preview" id="relatorioFilesPreview"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalAddRelatorio')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveRelatorio()">Adicionar Relatório</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Shape Modal -->
+<div class="modal-overlay" id="modalAddShape" style="display:none" onclick="handleOverlayClick(event,'modalAddShape')">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Adicionar Arquivo de Shape</h3>
+      <button class="btn-close" onclick="closeModal('modalAddShape')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Categoria <span class="required">*</span></label>
+        <div class="doc-type-grid" id="shapeTypeGrid"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Arquivo(s) <span class="required">*</span></label>
+        <div class="dropzone" onclick="document.getElementById('shapeFileInput').click()" ondrop="handleDrop(event,'shapeFileInput','shapeFilesPreview')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <div class="dropzone-icon">📐</div>
+          <p><strong>Clique para selecionar</strong> ou arraste os arquivos aqui</p>
+          <p style="font-size:12px;margin-top:6px">KML, SHP, PDF, imagens — múltiplos arquivos permitidos</p>
+          <input type="file" id="shapeFileInput" multiple onchange="handleFileChange(event,'shapeFilesPreview')">
+        </div>
+        <div class="files-preview" id="shapeFilesPreview"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalAddShape')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveShape()">Adicionar Arquivo</button>
+    </div>
+  </div>
+</div>
+
+<!-- File Viewer Modal -->
+<div class="modal-overlay" id="modalFileViewer" style="display:none" onclick="handleOverlayClick(event,'modalFileViewer')">
+  <div class="modal file-viewer-modal">
+    <div class="modal-header">
+      <h3 id="viewerFileName">Visualizar Documento</h3>
+      <button class="btn-close" onclick="closeModal('modalFileViewer')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="file-viewer-frame" id="viewerFrame"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalFileViewer')">Fechar</button>
+      <button class="btn btn-accent" id="viewerDownloadBtn">⬇ Download</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let state = {
+  owners: [],
+  oneDriveConnected: false,
+  currentOwnerId: null,
+};
+
+const DOC_TYPES = [
+  { key: 'manifesto', label: 'Manifesto', icon: '📄', required: true },
+  { key: 'pip', label: 'PIP', icon: '📑', required: true },
+  { key: 'credenciamento', label: 'Credenciamento', icon: '🪪', required: true },
+  { key: 'procuracao', label: 'Procuração', icon: '✍️', required: false },
+  { key: 'id', label: 'Documento de Identificação', icon: '🪪', required: true },
+  { key: 'comprovante', label: 'Comprovante de Residência', icon: '🏠', required: true },
+  { key: 'matricula', label: 'Registro Geral (Matrícula)', icon: '📋', required: true },
+  { key: 'certidao', label: 'Certidão Neg. Débitos Ambientais', icon: '✅', required: true },
+  { key: 'car', label: 'CAR', icon: '🌱', required: true },
+  { key: 'tac', label: 'Declaração TAC', icon: '📜', required: true },
+  { key: 'uso_imagem', label: 'Uso de Imagem', icon: '🎥', required: true },
+  { key: 'retificacao', label: 'Autorização de Retificação', icon: '📝', required: true },
+  { key: 'topografico', label: 'Levantamento Topográfico', icon: '📐', required: false },
+  { key: 'diverso', label: 'Documento Diverso', icon: '📁', required: false },
+];
+
+const SHAPE_TYPES = [
+  { key: 'shape', label: 'Shape', icon: '📐' },
+  { key: 'kml', label: 'KML', icon: '🌍' },
+  { key: 'pdf_mapa', label: 'PDF de Mapa', icon: '🗺️' },
+  { key: 'foto_mapa', label: 'Foto de Mapa', icon: '🖼️' },
+];
+
+const REQUIRED_DOCS = DOC_TYPES.filter(d => d.required).map(d => d.key);
+
+// ===== LOCALSTORAGE =====
+function loadState() {
+  const saved = localStorage.getItem('aguasParaSempre_v2');
+  if (saved) {
+    try { state = JSON.parse(saved); } catch(e) {}
+  }
+}
+function saveState() {
+  localStorage.setItem('aguasParaSempre_v2', JSON.stringify(state));
+  syncToSharePoint();
+}
+loadState();
+
+// ===== NAVIGATION =====
+let history_stack = ['home'];
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  window.scrollTo(0, 0);
+
+  if (page === 'consultar') renderConsultarList();
+  if (page === 'editar') renderEditarList();
+  if (page === 'shapes') renderShapesList();
+}
+
+function abrirMapa() {
+  window.open('https://caj-ti.github.io/Mapa-Aguas-Para-Sempre/?utm_source=chatgpt.com#17/-26.16721/-48.97841', '_blank');
+  showToast('🗺️ Abrindo mapa interativo...', 'info');
+}
+
+// ===== ONEDRIVE / SHAREPOINT CONFIG =====
+// ⬇ ÚNICO LUGAR QUE VOCÊ PRECISA EDITAR ⬇
+// Após registrar o app no Azure Portal, cole o Client ID abaixo:
+const AZURE_CLIENT_ID = 'SEU_CLIENT_ID_AQUI';
+
+const SHAREPOINT_HOST     = 'https://aguasdejoinvillecombr.sharepoint.com';
+const SHAREPOINT_SITE     = '/sites/GQM';
+const SHAREPOINT_FOLDER   = 'Documentos Compartilhados/CAS/06. Pagamento por serviço ambiental/sistema de gestão BB';
+const SHAREPOINT_FILENAME = 'gestao-bb-dados.json';
+
+const msalConfig = {
+  auth: {
+    clientId: AZURE_CLIENT_ID,
+    authority: 'https://login.microsoftonline.com/aguasdejoinvillecombr.onmicrosoft.com',
+    redirectUri: window.location.href.split('?')[0].split('#')[0],
+  },
+  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
+};
+const SCOPES = ['Files.ReadWrite', 'Sites.ReadWrite.All', 'User.Read'];
+
+let _msalInstance = null;
+let _accessToken   = null;
+let _syncTimeout   = null;
+
+async function getMsal() {
+  if (!_msalInstance) {
+    _msalInstance = new msal.PublicClientApplication(msalConfig);
+    await _msalInstance.initialize();
+  }
+  return _msalInstance;
+}
+
+async function getToken() {
+  const instance = await getMsal();
+  const accounts = instance.getAllAccounts();
+  if (!accounts.length) throw new Error('Não autenticado');
+  try {
+    const r = await instance.acquireTokenSilent({ scopes: SCOPES, account: accounts[0] });
+    _accessToken = r.accessToken;
+    return _accessToken;
+  } catch {
+    const r = await instance.acquireTokenPopup({ scopes: SCOPES });
+    _accessToken = r.accessToken;
+    return _accessToken;
+  }
+}
+
+// ─── Login ───────────────────────────────────────────────────────────────────
+async function toggleOneDriveAuth() {
+  const loginOverlay = document.getElementById('loginOverlay');
+
+  if (state.oneDriveConnected) {
+    if (!confirm('Deseja desconectar do OneDrive?')) return;
+    state.oneDriveConnected = false;
+    state.odUser = null;
+    _accessToken = null;
+    localStorage.removeItem('aguasParaSempre_v2');
+    saveState();
+    updateODStatus();
+    loginOverlay.style.display = 'flex';
+    showToast('OneDrive desconectado', 'info');
+    return;
+  }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Conectando...';
+
+  try {
+    if (AZURE_CLIENT_ID === 'SEU_CLIENT_ID_AQUI') {
+      throw new Error('Configure o AZURE_CLIENT_ID no arquivo HTML primeiro.');
+    }
+    const instance = await getMsal();
+    const result   = await instance.loginPopup({ scopes: SCOPES });
+    if (!result) throw new Error('Login cancelado');
+
+    _accessToken = result.accessToken;
+    state.oneDriveConnected = true;
+    state.odUser = result.account?.name || result.account?.username || 'Usuário';
+
+    // Carrega dados do SharePoint
+    loginOverlay.querySelector('.login-status').textContent = '☁️ Carregando dados do SharePoint...';
+    await loadFromSharePoint();
+
+    loginOverlay.style.display = 'none';
+    updateODStatus();
+    showToast('✅ Conectado como ' + state.odUser);
+    renderConsultarList();
+  } catch(e) {
+    showToast('Erro: ' + (e.message || e), 'error');
+    btn.disabled = false;
+    btn.textContent = '🔐 Entrar com conta Microsoft';
+    loginOverlay.querySelector('.login-status').textContent = '❌ ' + (e.message || 'Erro ao conectar');
+  }
+}
+
+// ─── Carregar dados do SharePoint ────────────────────────────────────────────
+async function loadFromSharePoint() {
+  try {
+    const token = await getToken();
+    const url = `${SHAREPOINT_HOST}${SHAREPOINT_SITE}/_api/web/GetFileByServerRelativeUrl` +
+      `('${SHAREPOINT_SITE}/${encodeURIComponent(SHAREPOINT_FOLDER)}/${SHAREPOINT_FILENAME}')/$value`;
+
+    const res = await fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.owners) {
+        // Mescla: preserva a conexão ativa e carrega o resto do SharePoint
+        const connected = state.oneDriveConnected;
+        const user = state.odUser;
+        state = { ...data, oneDriveConnected: connected, odUser: user };
+        localStorage.setItem('aguasParaSempre_v2', JSON.stringify(state));
+        showToast('☁️ Dados carregados do SharePoint!', 'info');
+      }
+    } else if (res.status === 404) {
+      // Arquivo ainda não existe — primeiro uso, ok
+      showToast('☁️ Novo arquivo será criado no SharePoint', 'info');
+    } else {
+      console.warn('SharePoint load status:', res.status);
+    }
+  } catch(e) {
+    console.warn('Erro ao carregar do SharePoint:', e);
+  }
+}
+
+// ─── Salvar dados no SharePoint (com debounce de 2s) ─────────────────────────
+async function syncToSharePoint() {
+  if (!state.oneDriveConnected) return;
+  clearTimeout(_syncTimeout);
+  _syncTimeout = setTimeout(async () => {
+    try {
+      const token  = await getToken();
+      const body   = JSON.stringify(state);
+
+      // Graph API — upload para SharePoint
+      const siteUrl  = `${SHAREPOINT_HOST}${SHAREPOINT_SITE}`;
+      const filePath = `${SHAREPOINT_FOLDER}/${SHAREPOINT_FILENAME}`;
+
+      // Primeiro precisa do Drive ID do site
+      const siteRes  = await fetch(`https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_HOST.replace('https://','')}/sites/GQM`,
+        { headers: { Authorization: 'Bearer ' + token } });
+
+      let uploadUrl;
+      if (siteRes.ok) {
+        const siteData = await siteRes.json();
+        const siteId   = siteData.id;
+        uploadUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${filePath}:/content`;
+      } else {
+        // Fallback: usa SharePoint REST API
+        uploadUrl = `${SHAREPOINT_HOST}${SHAREPOINT_SITE}/_api/web/GetFolderByServerRelativeUrl` +
+          `('${SHAREPOINT_SITE}/${SHAREPOINT_FOLDER}')/Files/add(url='${SHAREPOINT_FILENAME}',overwrite=true)`;
+      }
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: siteRes.ok ? 'PUT' : 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+          ...(siteRes.ok ? {} : { 'Accept': 'application/json;odata=verbose', 'X-RequestDigest': await getFormDigest(token) })
+        },
+        body: body
+      });
+
+      if (uploadRes.ok) {
+        const dot = document.getElementById('odDot');
+        dot.style.boxShadow = '0 0 8px var(--success)';
+        setTimeout(() => { dot.style.boxShadow = ''; }, 1500);
+      } else {
+        console.warn('SharePoint sync falhou:', uploadRes.status);
+      }
+    } catch(e) {
+      console.warn('Erro no sync:', e);
+    }
+  }, 2000);
+}
+
+async function getFormDigest(token) {
+  try {
+    const res = await fetch(`${SHAREPOINT_HOST}${SHAREPOINT_SITE}/_api/contextinfo`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=verbose' }
+    });
+    const data = await res.json();
+    return data?.d?.GetContextWebInformation?.FormDigestValue || '';
+  } catch { return ''; }
+}
+
+// ─── Status badge ─────────────────────────────────────────────────────────────
+function updateODStatus() {
+  const dot   = document.getElementById('odDot');
+  const label = document.getElementById('odLabel');
+  if (state.oneDriveConnected) {
+    dot.className   = 'dot connected';
+    label.textContent = state.odUser || 'Conectado';
+  } else {
+    dot.className   = 'dot';
+    label.textContent = 'Conectar OneDrive';
+  }
+}
+updateODStatus();
+
+// ─── Exibe overlay de login se não autenticado ────────────────────────────────
+(function checkLoginOnLoad() {
+  if (!state.oneDriveConnected) {
+    const overlay = document.getElementById('loginOverlay');
+    if (overlay) overlay.style.display = 'flex';
+  }
+})();
+
+// ===== RENDER CONSULTAR LIST =====
+function renderConsultarList() {
+  const container = document.getElementById('ownerListConsultar');
+  const statsEl = document.getElementById('statsConsultar');
+  const q = document.getElementById('searchConsultar').value.toLowerCase();
+  let owners = state.owners;
+  if (q) owners = owners.filter(o => o.name.toLowerCase().includes(q) || (o.phase||'').toLowerCase().includes(q) || (o.matriculas||[]).some(m=>m.toLowerCase().includes(q)));
+
+  // Stats
+  const totalOwners = state.owners.length;
+  const totalDocs = state.owners.reduce((a,o)=>{
+    return a + Object.values(o.docs||{}).reduce((b,mDocs)=>b+(mDocs||[]).length,0);
+  }, 0);
+  const allComplete = state.owners.filter(o=>{
+    const mats = o.matriculas||[];
+    return mats.length > 0 && mats.every(m=>{
+      const docs = (o.docs||{})[m]||[];
+      const docKeys = docs.map(d=>d.type);
+      return REQUIRED_DOCS.every(rd=>docKeys.includes(rd));
+    });
+  }).length;
+
+  statsEl.innerHTML = `
+    <div class="stat-card"><div class="stat-value">${totalOwners}</div><div class="stat-label">Proprietários</div></div>
+    <div class="stat-card"><div class="stat-value">${totalDocs}</div><div class="stat-label">Documentos</div></div>
+    <div class="stat-card"><div class="stat-value">${allComplete}</div><div class="stat-label">Completos</div></div>
+  `;
+
+  if (!owners.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><h3>${q ? 'Nenhum resultado encontrado' : 'Não há proprietários cadastrados'}</h3><p>${q ? 'Tente outro termo de busca.' : 'Acesse "Editar Documentos e Proprietários" para cadastrar.'}</p></div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="owner-grid">${owners.map(o=>ownerCardHTML(o,'consultar')).join('')}</div>`;
+}
+
+function ownerCardHTML(owner, mode) {
+  const mats = owner.matriculas||[];
+  const docs = owner.docs||{};
+  let totalRequired = mats.length * REQUIRED_DOCS.length;
+  let totalDone = 0;
+  mats.forEach(m=>{
+    const mDocs = (docs[m]||[]).map(d=>d.type);
+    REQUIRED_DOCS.forEach(rd=>{ if(mDocs.includes(rd)) totalDone++; });
+  });
+  const pct = totalRequired > 0 ? Math.round(totalDone/totalRequired*100) : 0;
+  const initial = owner.name.charAt(0).toUpperCase();
+  const onclick = mode === 'consultar'
+    ? `openOwnerDetail('${owner.id}')`
+    : `openOwnerEditor('${owner.id}')`;
+
+  return `
+    <div class="owner-card" onclick="${onclick}">
+      <div class="owner-card-header">
+        <div class="owner-avatar">${initial}</div>
+        <span class="phase-badge phase-${owner.phase}">${owner.phase}</span>
+      </div>
+      <h3>${owner.name}</h3>
+      <div class="matriculas-count">${mats.length} matrícula${mats.length!==1?'s':''}</div>
+      <div class="doc-progress">
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <span class="progress-text">${totalDone}/${totalRequired} docs</span>
+      </div>
+    </div>
+  `;
+}
+
+// ===== OPEN OWNER DETAIL =====
+function openOwnerDetail(id) {
+  const owner = state.owners.find(o=>o.id===id);
+  if (!owner) return;
+  state.currentOwnerId = id;
+  document.getElementById('detailOwnerName').textContent = owner.name;
+  document.getElementById('detailPhaseBadge').innerHTML = `<span class="phase-badge phase-${owner.phase}">${owner.phase}</span>`;
+  renderOwnerDetail(owner, false);
+  navigateTo('owner-detail');
+}
+
+function renderOwnerDetail(owner, editMode) {
+  const container = document.getElementById('ownerDetailContent');
+  const mats = owner.matriculas||[];
+  const docs = owner.docs||{};
+  const fotos = owner.fotos||[];
+  const relatorios = owner.relatorios||[];
+
+  if (mats.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📂</div><h3>Sem matrículas</h3><p>Edite o proprietário para adicionar matrículas.</p></div>`;
+    return;
+  }
+
+  let html = '';
+  mats.forEach(mat => {
+    const matDocs = docs[mat]||[];
+    const docKeys = matDocs.map(d=>d.type);
+    const pending = REQUIRED_DOCS.filter(rd=>!docKeys.includes(rd));
+    const pendingLabel = pending.length === 0
+      ? `<span class="all-done-pill">✅ Completo</span>`
+      : `<span class="pending-pill">⚠ ${pending.length} pendente${pending.length>1?'s':''}</span>`;
+
+    html += `
+      <div class="matricula-section" id="mat_${mat.replace(/\W/g,'_')}">
+        <div class="matricula-header" onclick="toggleMatricula('mat_${mat.replace(/\W/g,'_')}')">
+          <div class="matricula-title">
+            <span class="matricula-num">${mat}</span>
+            <span class="matricula-name">${owner.name}</span>
+            ${pendingLabel}
+          </div>
+          <span class="matricula-chevron">▾</span>
+        </div>
+        <div class="matricula-body">
+          <div class="checklist-title">Checklist Documental</div>
+          <div class="checklist">
+            ${DOC_TYPES.filter(dt=>dt.required || docKeys.includes(dt.key)).map(dt=>{
+              const doc = matDocs.find(d=>d.type===dt.key);
+              if (doc) {
+                const dateStr = doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—';
+                return `<div class="check-item has-doc">
+                  <span class="check-icon">✅</span>
+                  <span class="check-label">${doc.customName||dt.label} <span class="check-date">(${dateStr})</span></span>
+                  ${editMode?'':`<button class="check-download" onclick="viewDoc('${owner.id}','${mat}','${dt.key}')">👁 Ver</button>`}
+                </div>`;
+              } else {
+                return `<div class="check-item missing">
+                  <span class="check-icon">🔴</span>
+                  <span class="check-label">${dt.label}</span>
+                </div>`;
+              }
+            }).join('')}
+            ${matDocs.filter(d=>d.type==='diverso').length > 0 ? `
+              <div style="margin-top:10px">
+                <div class="checklist-title">Documentos Diversos</div>
+                ${matDocs.filter(d=>d.type==='diverso').map(doc=>{
+                  const dateStr = doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—';
+                  return `<div class="check-item has-doc">
+                    <span class="check-icon">📁</span>
+                    <span class="check-label">${doc.customName||'Documento Diverso'} <span class="check-date">(${dateStr})</span></span>
+                    <button class="check-download" onclick="viewDoc('${owner.id}','${mat}','diverso','${doc.id||''}')">👁 Ver</button>
+                  </div>`;
+                }).join('')}
+              </div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  // Fotos section
+  if (fotos.length > 0 || relatorios.length > 0) {
+    html += `<div style="margin-top:28px"><div class="section-label">Fotos e Relatórios</div>`;
+    if (fotos.length > 0) {
+      html += `<div class="shapes-cat-card" style="margin-bottom:12px">
+        <div class="shapes-cat-header"><span class="shapes-cat-icon">📷</span><span class="shapes-cat-title">Fotos</span></div>
+        <div class="shapes-cat-body">
+          <div class="shapes-file-list">
+            ${fotos.map(f=>`
+              <div class="shapes-file-item">
+                <span class="shapes-file-icon">${f.category==='Vistoria'?'🏠':'🪣'}</span>
+                <div><div class="shapes-file-name">${f.category} — ${f.files.join(', ')}</div><div class="shapes-file-date">${f.date}</div></div>
+                <div class="shapes-file-actions">
+                  <button class="btn btn-outline btn-sm" onclick="viewGenericDoc('${f.files[0]}')">👁 Ver</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>`;
+    }
+    if (relatorios.length > 0) {
+      html += `<div class="shapes-cat-card">
+        <div class="shapes-cat-header"><span class="shapes-cat-icon">📋</span><span class="shapes-cat-title">Relatórios de Vistoria</span></div>
+        <div class="shapes-cat-body">
+          <div class="shapes-file-list">
+            ${relatorios.map(r=>`
+              <div class="shapes-file-item">
+                <span class="shapes-file-icon">${r.category==='Vistoria'?'📋':'🪣'}</span>
+                <div><div class="shapes-file-name">${r.category} — ${r.files.join(', ')}</div><div class="shapes-file-date">${r.date}</div></div>
+                <div class="shapes-file-actions">
+                  <button class="btn btn-outline btn-sm" onclick="viewGenericDoc('${r.files[0]}')">👁 Ver</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function toggleMatricula(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+// ===== RENDER EDITAR LIST =====
+function renderEditarList() {
+  const container = document.getElementById('ownerListEditar');
+  const q = document.getElementById('searchEditar').value.toLowerCase();
+  let owners = state.owners;
+  if (q) owners = owners.filter(o => o.name.toLowerCase().includes(q));
+
+  if (!owners.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><h3>${q?'Nenhum resultado':'Nenhum proprietário cadastrado'}</h3><p>Clique em "Adicionar Proprietário" para começar.</p></div>`;
+    return;
+  }
+  container.innerHTML = `<div class="owner-grid">${owners.map(o=>ownerCardHTML(o,'editar')).join('')}</div>`;
+}
+
+// ===== OPEN OWNER EDITOR =====
+function openOwnerEditor(id) {
+  const owner = state.owners.find(o=>o.id===id);
+  if (!owner) return;
+  state.currentOwnerId = id;
+  document.getElementById('editorOwnerName').textContent = owner.name;
+  renderOwnerEditor(owner);
+  navigateTo('owner-editor');
+}
+
+function renderOwnerEditor(owner) {
+  const container = document.getElementById('ownerEditorContent');
+  // Similar to detail but with edit actions
+  const mats = owner.matriculas||[];
+  const docs = owner.docs||{};
+  const fotos = owner.fotos||[];
+  const relatorios = owner.relatorios||[];
+
+  let html = `<div style="margin-bottom:20px">
+    <div class="owner-detail-header">
+      <div class="owner-detail-avatar">${owner.name.charAt(0)}</div>
+      <div class="owner-detail-info">
+        <h2>${owner.name}</h2>
+        <div class="owner-detail-meta">
+          <span class="phase-badge phase-${owner.phase}">${owner.phase}</span>
+          <span class="meta-tag">📋 ${mats.length} matrícula${mats.length!==1?'s':''}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  if (mats.length === 0) {
+    html += `<div class="empty-state"><div class="empty-icon">📂</div><h3>Sem matrículas cadastradas</h3><p>Edite o proprietário para adicionar matrículas.</p></div>`;
+    container.innerHTML = html;
+    return;
+  }
+
+  html += `<div class="section-label">Matrículas e Documentos</div>`;
+
+  mats.forEach(mat => {
+    const matDocs = docs[mat]||[];
+    const docKeys = matDocs.map(d=>d.type);
+    const pending = REQUIRED_DOCS.filter(rd=>!docKeys.includes(rd));
+    const pendingLabel = pending.length === 0
+      ? `<span class="all-done-pill">✅ Completo</span>`
+      : `<span class="pending-pill">⚠ ${pending.length} pendente${pending.length>1?'s':''}</span>`;
+
+    html += `
+      <div class="matricula-section open" id="emat_${mat.replace(/\W/g,'_')}">
+        <div class="matricula-header" onclick="toggleMatricula('emat_${mat.replace(/\W/g,'_')}')">
+          <div class="matricula-title">
+            <span class="matricula-num">${mat}</span>
+            <span class="matricula-name">${owner.name}</span>
+            ${pendingLabel}
+          </div>
+          <span class="matricula-chevron">▾</span>
+        </div>
+        <div class="matricula-body">
+          <div class="checklist-title">Checklist Documental</div>
+          <div class="checklist">
+            ${DOC_TYPES.filter(dt=>dt.required || docKeys.includes(dt.key)).map(dt=>{
+              const matDocsList = matDocs.filter(d=>d.type===dt.key);
+              if (dt.key === 'diverso') return ''; // handled separately
+              const doc = matDocsList[0];
+              if (doc) {
+                const dateStr = doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—';
+                return `<div class="check-item has-doc">
+                  <span class="check-icon">✅</span>
+                  <span class="check-label">${doc.customName||dt.label} <span class="check-date">(${dateStr})</span></span>
+                  <button class="check-download" onclick="viewDoc('${owner.id}','${mat}','${dt.key}')">👁 Ver</button>
+                  <button class="check-download" style="color:var(--danger)" onclick="deleteDoc('${owner.id}','${mat}','${dt.key}')">🗑</button>
+                </div>`;
+              } else {
+                return `<div class="check-item missing">
+                  <span class="check-icon">🔴</span>
+                  <span class="check-label">${dt.label}</span>
+                  <button class="check-download" onclick="quickAddDoc('${owner.id}','${mat}','${dt.key}')">+ Adicionar</button>
+                </div>`;
+              }
+            }).join('')}
+          </div>
+          ${matDocs.filter(d=>d.type==='diverso').length > 0 ? `
+            <div style="margin-top:14px">
+              <div class="checklist-title">Documentos Diversos</div>
+              <div class="checklist">
+                ${matDocs.filter(d=>d.type==='diverso').map(doc=>{
+                  const dateStr = doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—';
+                  return `<div class="check-item has-doc">
+                    <span class="check-icon">📁</span>
+                    <span class="check-label">${doc.customName||'Documento Diverso'} <span class="check-date">(${dateStr})</span></span>
+                    <button class="check-download" onclick="viewDoc('${owner.id}','${mat}','diverso','${doc.id||''}')">👁 Ver</button>
+                    <button class="check-download" style="color:var(--danger)" onclick="deleteDocById('${owner.id}','${mat}','${doc.id||''}')">🗑</button>
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  // Fotos & Relatorios
+  if (fotos.length > 0 || relatorios.length > 0) {
+    html += `<div style="margin-top:28px"><div class="section-label">Fotos e Relatórios</div>`;
+    if (fotos.length > 0) {
+      html += `<div class="shapes-cat-card" style="margin-bottom:12px">
+        <div class="shapes-cat-header"><span class="shapes-cat-icon">📷</span><span class="shapes-cat-title">Fotos</span></div>
+        <div class="shapes-cat-body">
+          <div class="shapes-file-list">
+            ${fotos.map((f,fi)=>`
+              <div class="shapes-file-item">
+                <span class="shapes-file-icon">${f.category==='Vistoria'?'🏠':'🪣'}</span>
+                <div><div class="shapes-file-name">${f.category} — ${f.files.join(', ')}</div><div class="shapes-file-date">${f.date}</div></div>
+                <div class="shapes-file-actions">
+                  <button class="btn btn-outline btn-sm" onclick="viewGenericDoc('${f.files[0]}')">👁 Ver</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteFoto(${fi})">🗑</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>`;
+    }
+    if (relatorios.length > 0) {
+      html += `<div class="shapes-cat-card">
+        <div class="shapes-cat-header"><span class="shapes-cat-icon">📋</span><span class="shapes-cat-title">Relatórios</span></div>
+        <div class="shapes-cat-body">
+          <div class="shapes-file-list">
+            ${relatorios.map((r,ri)=>`
+              <div class="shapes-file-item">
+                <span class="shapes-file-icon">${r.category==='Vistoria'?'📋':'🪣'}</span>
+                <div><div class="shapes-file-name">${r.category} — ${r.files.join(', ')}</div><div class="shapes-file-date">${r.date}</div></div>
+                <div class="shapes-file-actions">
+                  <button class="btn btn-outline btn-sm" onclick="viewGenericDoc('${r.files[0]}')">👁 Ver</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteRelatorio(${ri})">🗑</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// ===== ADD OWNER =====
+let selectedPhase = '';
+let editingOwnerId = null;
+
+function selectPhase(phase) {
+  selectedPhase = phase;
+  document.querySelectorAll('.radio-option').forEach(el => {
+    el.className = 'radio-option';
+  });
+  event.currentTarget.className = `radio-option selected-${phase}`;
+}
+
+function addMatricula() {
+  const list = document.getElementById('matriculasList');
+  const item = document.createElement('div');
+  item.className = 'matricula-item';
+  item.innerHTML = `
+    <input type="text" class="form-input" placeholder="Número da matrícula">
+    <button class="btn-remove-mat" onclick="this.parentElement.remove()">×</button>
+  `;
+  list.appendChild(item);
+}
+
+function openEditOwnerModal() {
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner) return;
+  editingOwnerId = owner.id;
+  document.getElementById('modalAddOwnerTitle').textContent = 'Editar Proprietário';
+  document.getElementById('ownerNameInput').value = owner.name;
+  document.getElementById('matriculasList').innerHTML = (owner.matriculas||[]).map((m,i) => `
+    <div class="matricula-item">
+      <input type="text" class="form-input" value="${m}" placeholder="Número da matrícula">
+      ${i>0?`<button class="btn-remove-mat" onclick="this.parentElement.remove()">×</button>`:''}
+    </div>
+  `).join('');
+  selectedPhase = owner.phase;
+  document.querySelectorAll('.radio-option').forEach(el => {
+    const v = el.querySelector('input')?.value;
+    el.className = v === owner.phase ? `radio-option selected-${owner.phase}` : 'radio-option';
+  });
+  openModal('modalAddOwner');
+}
+
+function saveOwner() {
+  const name = document.getElementById('ownerNameInput').value.trim();
+  if (!name) { showToast('Informe o nome do proprietário', 'error'); return; }
+  if (!selectedPhase) { showToast('Selecione uma fase', 'error'); return; }
+  const matriculas = Array.from(document.querySelectorAll('#matriculasList .form-input'))
+    .map(i=>i.value.trim()).filter(v=>v);
+  if (!matriculas.length) { showToast('Adicione pelo menos uma matrícula', 'error'); return; }
+
+  if (editingOwnerId) {
+    const idx = state.owners.findIndex(o=>o.id===editingOwnerId);
+    if (idx>-1) {
+      const prev = state.owners[idx];
+      // preserve docs for existing matriculas
+      const newDocs = {};
+      matriculas.forEach(m=>{ newDocs[m] = (prev.docs||{})[m]||[]; });
+      state.owners[idx] = {...prev, name, phase: selectedPhase, matriculas, docs: newDocs};
+    }
+    editingOwnerId = null;
+    showToast('✅ Proprietário atualizado com sucesso!');
+    saveState();
+    closeModal('modalAddOwner');
+    const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+    document.getElementById('editorOwnerName').textContent = owner.name;
+    renderOwnerEditor(owner);
+  } else {
+    const newOwner = {
+      id: 'o_' + Date.now(),
+      name, phase: selectedPhase, matriculas,
+      docs: Object.fromEntries(matriculas.map(m=>[m,[]])),
+      fotos: [], relatorios: [], shapes: []
+    };
+    state.owners.push(newOwner);
+    saveState();
+    closeModal('modalAddOwner');
+    showToast('✅ Proprietário cadastrado com sucesso!');
+    renderEditarList();
+  }
+}
+
+function deleteCurrentOwner() {
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner) return;
+  if (!confirm(`Tem certeza que deseja excluir "${owner.name}"? Esta ação não pode ser desfeita.`)) return;
+  state.owners = state.owners.filter(o=>o.id!==state.currentOwnerId);
+  saveState();
+  showToast('🗑️ Proprietário excluído');
+  navigateTo('editar');
+}
+
+// ===== ADD DOCUMENT =====
+let selectedDocType = '';
+let tempFiles = {};
+
+function openAddDocModal() {
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner) return;
+  selectedDocType = '';
+  tempFiles['docFileInput'] = [];
+
+  const matSel = document.getElementById('docMatricula');
+  matSel.innerHTML = `<option value="">Selecione...</option><option value="__all__">Todas as matrículas</option>` +
+    (owner.matriculas||[]).map(m=>`<option value="${m}">${m}</option>`).join('');
+
+  const grid = document.getElementById('docTypeGrid');
+  grid.innerHTML = DOC_TYPES.map(dt=>`
+    <div class="doc-type-option ${!dt.required?'not-required':''}" onclick="selectDocType('${dt.key}',this)" data-key="${dt.key}">
+      <span>${dt.icon}</span> ${dt.label}
+    </div>
+  `).join('');
+
+  document.getElementById('docDiversoNameGroup').style.display = 'none';
+  document.getElementById('docFilesPreview').innerHTML = '';
+  openModal('modalAddDoc');
+}
+
+function quickAddDoc(ownerId, mat, docKey) {
+  state.currentOwnerId = ownerId;
+  openAddDocModal();
+  setTimeout(()=>{
+    document.getElementById('docMatricula').value = mat;
+    selectDocType(docKey, document.querySelector(`[data-key="${docKey}"]`));
+  },100);
+}
+
+function selectDocType(key, el) {
+  selectedDocType = key;
+  document.querySelectorAll('.doc-type-option').forEach(e=>e.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+  document.getElementById('docDiversoNameGroup').style.display = key === 'diverso' ? 'block' : 'none';
+}
+
+function saveDocument() {
+  const mat = document.getElementById('docMatricula').value;
+  if (!mat) { showToast('Selecione a matrícula', 'error'); return; }
+  if (!selectedDocType) { showToast('Selecione o tipo de documento', 'error'); return; }
+  const files = tempFiles['docFileInput']||[];
+  if (!files.length) { showToast('Selecione o arquivo', 'error'); return; }
+
+  let customName = '';
+  if (selectedDocType === 'diverso') {
+    customName = document.getElementById('docDiversoName').value.trim();
+    if (!customName) { showToast('Informe o nome do documento diverso', 'error'); return; }
+  }
+
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner) return;
+
+  const docEntry = {
+    id: 'd_' + Date.now(),
+    type: selectedDocType,
+    fileName: files[0].name,
+    customName: customName || DOC_TYPES.find(d=>d.key===selectedDocType)?.label,
+    date: new Date().toISOString(),
+    oneDrive: state.oneDriveConnected,
+  };
+
+  const mats = mat === '__all__' ? owner.matriculas : [mat];
+  mats.forEach(m => {
+    if (!owner.docs) owner.docs = {};
+    if (!owner.docs[m]) owner.docs[m] = [];
+    // Remove existing of same type (except diverso)
+    if (selectedDocType !== 'diverso') {
+      owner.docs[m] = owner.docs[m].filter(d=>d.type!==selectedDocType);
+    }
+    owner.docs[m].push({...docEntry, id: 'd_'+Date.now()+Math.random()});
+  });
+
+  saveState();
+  closeModal('modalAddDoc');
+  showToast(`✅ Documento "${docEntry.customName}" adicionado!`);
+  renderOwnerEditor(owner);
+}
+
+// ===== FOTOS =====
+let selectedFotoCategory = '';
+let selectedRelatorioCategory = '';
+
+function selectFotoCategory(cat) {
+  selectedFotoCategory = cat;
+  document.getElementById('catFossa').classList.toggle('selected', cat==='Limpeza de Fossa');
+  document.getElementById('catVistoria').classList.toggle('selected', cat==='Vistoria');
+}
+function selectRelatorioCategory(cat) {
+  selectedRelatorioCategory = cat;
+  document.getElementById('catRelFossa').classList.toggle('selected', cat==='Limpeza de Fossa');
+  document.getElementById('catRelVistoria').classList.toggle('selected', cat==='Vistoria');
+}
+
+function openAddFotoModal() {
+  selectedFotoCategory = '';
+  tempFiles['fotoFileInput'] = [];
+  document.getElementById('catFossa').classList.remove('selected');
+  document.getElementById('catVistoria').classList.remove('selected');
+  document.getElementById('fotoData').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fotoFilesPreview').innerHTML = '';
+  openModal('modalAddFoto');
+}
+function openAddRelatorioModal() {
+  selectedRelatorioCategory = '';
+  tempFiles['relatorioFileInput'] = [];
+  document.getElementById('catRelFossa').classList.remove('selected');
+  document.getElementById('catRelVistoria').classList.remove('selected');
+  document.getElementById('relatorioData').value = new Date().toISOString().split('T')[0];
+  document.getElementById('relatorioFilesPreview').innerHTML = '';
+  openModal('modalAddRelatorio');
+}
+
+function saveFotos() {
+  if (!selectedFotoCategory) { showToast('Selecione a categoria', 'error'); return; }
+  const data = document.getElementById('fotoData').value;
+  if (!data) { showToast('Informe a data', 'error'); return; }
+  const files = tempFiles['fotoFileInput']||[];
+  if (!files.length) { showToast('Selecione pelo menos uma foto', 'error'); return; }
+
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner) return;
+  if (!owner.fotos) owner.fotos = [];
+  owner.fotos.push({ category: selectedFotoCategory, date: data, files: files.map(f=>f.name) });
+  saveState();
+  closeModal('modalAddFoto');
+  showToast(`✅ ${files.length} foto${files.length>1?'s':''} adicionada${files.length>1?'s':''}!`);
+  renderOwnerEditor(owner);
+}
+function saveRelatorio() {
+  if (!selectedRelatorioCategory) { showToast('Selecione a categoria', 'error'); return; }
+  const data = document.getElementById('relatorioData').value;
+  if (!data) { showToast('Informe a data', 'error'); return; }
+  const files = tempFiles['relatorioFileInput']||[];
+  if (!files.length) { showToast('Selecione pelo menos um arquivo', 'error'); return; }
+
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner) return;
+  if (!owner.relatorios) owner.relatorios = [];
+  owner.relatorios.push({ category: selectedRelatorioCategory, date: data, files: files.map(f=>f.name) });
+  saveState();
+  closeModal('modalAddRelatorio');
+  showToast(`✅ Relatório adicionado!`);
+  renderOwnerEditor(owner);
+}
+
+function deleteFoto(idx) {
+  if (!confirm('Excluir esta entrada de fotos?')) return;
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  owner.fotos.splice(idx,1);
+  saveState();
+  renderOwnerEditor(owner);
+  showToast('🗑️ Fotos removidas');
+}
+function deleteRelatorio(idx) {
+  if (!confirm('Excluir este relatório?')) return;
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  owner.relatorios.splice(idx,1);
+  saveState();
+  renderOwnerEditor(owner);
+  showToast('🗑️ Relatório removido');
+}
+
+// ===== DELETE DOC =====
+function deleteDoc(ownerId, mat, docType) {
+  if (!confirm('Excluir este documento?')) return;
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner?.docs?.[mat]) return;
+  owner.docs[mat] = owner.docs[mat].filter(d=>d.type!==docType);
+  saveState();
+  showToast('🗑️ Documento removido');
+  renderOwnerEditor(owner);
+}
+function deleteDocById(ownerId, mat, docId) {
+  if (!confirm('Excluir este documento?')) return;
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner?.docs?.[mat]) return;
+  owner.docs[mat] = owner.docs[mat].filter(d=>d.id!==docId);
+  saveState();
+  showToast('🗑️ Documento removido');
+  renderOwnerEditor(owner);
+}
+
+// ===== VIEWER =====
+function viewDoc(ownerId, mat, docType, docId) {
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner?.docs?.[mat]) return;
+  const doc = docId
+    ? owner.docs[mat].find(d=>d.id===docId)
+    : owner.docs[mat].find(d=>d.type===docType);
+  if (!doc) return;
+  openFileViewer(doc.customName||doc.fileName, doc.fileName, doc.oneDrive);
+}
+function viewGenericDoc(fileName) {
+  openFileViewer(fileName, fileName, false);
+}
+function openFileViewer(title, fileName, onOneDrive) {
+  document.getElementById('viewerFileName').textContent = title || fileName;
+  const frame = document.getElementById('viewerFrame');
+  const ext = (fileName||'').split('.').pop().toLowerCase();
+  let icon = '📄';
+  if (['jpg','jpeg','png','gif','webp'].includes(ext)) icon = '🖼️';
+  else if (ext==='pdf') icon = '📑';
+  else if (['kml','shp'].includes(ext)) icon = '🌍';
+  frame.innerHTML = `
+    <div class="file-icon-big">${icon}</div>
+    <strong style="font-family:var(--font-heading);color:var(--primary)">${fileName||'Arquivo'}</strong>
+    <p>${onOneDrive ? '☁️ Arquivo armazenado no OneDrive. Clique em Download para abrir.' : 'Prévia não disponível — use o botão Download para abrir o arquivo.'}</p>
+    ${onOneDrive ? '<div class="od-file-label" style="font-size:13px;margin-top:8px">☁️ OneDrive conectado</div>' : ''}
+  `;
+  document.getElementById('viewerDownloadBtn').onclick = ()=>{ showToast(`⬇ Iniciando download de "${fileName}"...`, 'info'); };
+  openModal('modalFileViewer');
+}
+
+// ===== SHAPES =====
+let selectedShapeType = '';
+
+function renderShapesList() {
+  const container = document.getElementById('shapesOwnerList');
+  const q = document.getElementById('searchShapes').value.toLowerCase();
+  let owners = state.owners;
+  if (q) owners = owners.filter(o=>o.name.toLowerCase().includes(q));
+
+  if (!owners.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📐</div><h3>${q?'Nenhum resultado':'Nenhum proprietário cadastrado'}</h3><p>Cadastre proprietários em "Editar Documentos" para gerenciar shapes.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="owner-grid">${owners.map(o=>{
+    const shapeCount = (o.shapes||[]).length;
+    return `<div class="owner-card" onclick="openShapesDetail('${o.id}')">
+      <div class="owner-card-header">
+        <div class="owner-avatar">${o.name.charAt(0)}</div>
+        <span class="phase-badge phase-${o.phase}">${o.phase}</span>
+      </div>
+      <h3>${o.name}</h3>
+      <div class="matriculas-count">${shapeCount} arquivo${shapeCount!==1?'s':''} de shape</div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        ${['shape','kml','pdf_mapa','foto_mapa'].map(t=>{
+          const c = (o.shapes||[]).filter(s=>s.type===t).length;
+          if (!c) return '';
+          const icons = {shape:'📐',kml:'🌍',pdf_mapa:'🗺️',foto_mapa:'🖼️'};
+          return `<span style="font-size:12px;background:var(--surface-2);padding:3px 8px;border-radius:6px">${icons[t]} ${c}</span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('')}`;
+}
+
+function openShapesDetail(id) {
+  const owner = state.owners.find(o=>o.id===id);
+  if (!owner) return;
+  state.currentOwnerId = id;
+  document.getElementById('shapesDetailOwnerName').textContent = owner.name;
+  renderShapesDetail(owner);
+  navigateTo('shapes-detail');
+}
+
+function renderShapesDetail(owner) {
+  const container = document.getElementById('shapesDetailContent');
+  const shapes = owner.shapes||[];
+
+  if (!shapes.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📐</div><h3>Nenhum arquivo cadastrado</h3><p>Clique em "+ Adicionar Arquivo" para começar.</p></div>`;
+    return;
+  }
+
+  const categories = [
+    { key:'shape', label:'Shapes', icon:'📐' },
+    { key:'kml', label:'Arquivos KML', icon:'🌍' },
+    { key:'pdf_mapa', label:'PDFs de Mapa', icon:'🗺️' },
+    { key:'foto_mapa', label:'Fotos de Mapa', icon:'🖼️' },
+  ];
+
+  container.innerHTML = `<div class="shapes-categories">
+    ${categories.map(cat=>{
+      const catFiles = shapes.filter(s=>s.type===cat.key);
+      if (!catFiles.length) return '';
+      return `<div class="shapes-cat-card">
+        <div class="shapes-cat-header">
+          <span class="shapes-cat-icon">${cat.icon}</span>
+          <span class="shapes-cat-title">${cat.label}</span>
+          <span class="text-muted" style="margin-left:auto;font-size:12px">${catFiles.length} arquivo${catFiles.length>1?'s':''}</span>
+        </div>
+        <div class="shapes-cat-body">
+          <div class="shapes-file-list">
+            ${catFiles.map((s,si)=>`
+              <div class="shapes-file-item">
+                <span class="shapes-file-icon">${cat.icon}</span>
+                <div>
+                  <div class="shapes-file-name">${s.files.join(', ')}</div>
+                  <div class="shapes-file-date">${s.date}</div>
+                </div>
+                <div class="shapes-file-actions">
+                  <button class="btn btn-outline btn-sm" onclick="viewGenericDoc('${s.files[0]}')">👁 Ver</button>
+                  <button class="btn btn-outline btn-sm">⬇</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteShape('${owner.id}','${s.id||si}')">🗑</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function openAddShapeModal() {
+  selectedShapeType = '';
+  tempFiles['shapeFileInput'] = [];
+  document.getElementById('shapeFilesPreview').innerHTML = '';
+
+  const grid = document.getElementById('shapeTypeGrid');
+  grid.innerHTML = SHAPE_TYPES.map(st=>`
+    <div class="doc-type-option" onclick="selectShapeType('${st.key}',this)">
+      <span>${st.icon}</span> ${st.label}
+    </div>
+  `).join('');
+  openModal('modalAddShape');
+}
+function selectShapeType(key, el) {
+  selectedShapeType = key;
+  document.querySelectorAll('#shapeTypeGrid .doc-type-option').forEach(e=>e.classList.remove('selected'));
+  if(el) el.classList.add('selected');
+}
+function saveShape() {
+  if (!selectedShapeType) { showToast('Selecione a categoria', 'error'); return; }
+  const files = tempFiles['shapeFileInput']||[];
+  if (!files.length) { showToast('Selecione pelo menos um arquivo', 'error'); return; }
+
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner) return;
+  if (!owner.shapes) owner.shapes = [];
+  owner.shapes.push({
+    id: 's_'+Date.now(),
+    type: selectedShapeType,
+    files: files.map(f=>f.name),
+    date: new Date().toLocaleDateString('pt-BR'),
+  });
+  saveState();
+  closeModal('modalAddShape');
+  showToast('✅ Arquivo(s) de shape adicionado(s)!');
+  renderShapesDetail(owner);
+}
+function deleteShape(ownerId, shapeId) {
+  if (!confirm('Excluir este arquivo?')) return;
+  const owner = state.owners.find(o=>o.id===ownerId);
+  owner.shapes = (owner.shapes||[]).filter((s,i)=>s.id!==shapeId && i.toString()!==shapeId);
+  saveState();
+  renderShapesDetail(owner);
+  showToast('🗑️ Arquivo removido');
+}
+
+// ===== FILE HANDLING =====
+function handleFileChange(event, previewId) {
+  const files = Array.from(event.target.files);
+  const inputId = event.target.id;
+  if (!tempFiles[inputId]) tempFiles[inputId] = [];
+  tempFiles[inputId] = [...tempFiles[inputId], ...files];
+  renderFilesPreview(previewId, inputId);
+}
+
+function handleDrop(event, inputId, previewId) {
+  event.preventDefault();
+  event.currentTarget.classList.remove('dragover');
+  const files = Array.from(event.dataTransfer.files);
+  if (!tempFiles[inputId]) tempFiles[inputId] = [];
+  tempFiles[inputId] = [...tempFiles[inputId], ...files];
+  renderFilesPreview(previewId, inputId);
+}
+function handleDragOver(event) { event.preventDefault(); event.currentTarget.classList.add('dragover'); }
+function handleDragLeave(event) { event.currentTarget.classList.remove('dragover'); }
+
+function renderFilesPreview(previewId, inputId) {
+  const container = document.getElementById(previewId);
+  const files = tempFiles[inputId]||[];
+  container.innerHTML = files.map((f,i)=>`
+    <div class="file-preview-item">
+      <span>${getFileIcon(f.name)}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      <span class="file-size">${formatBytes(f.size)}</span>
+      <span class="remove-file" onclick="removeFile('${inputId}','${previewId}',${i})">✕</span>
+    </div>
+  `).join('');
+}
+function removeFile(inputId, previewId, idx) {
+  tempFiles[inputId].splice(idx,1);
+  renderFilesPreview(previewId, inputId);
+}
+function getFileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  const map = {pdf:'📑',doc:'📝',docx:'📝',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',kml:'🌍',shp:'📐',zip:'🗜️',xlsx:'📊',xls:'📊'};
+  return map[ext]||'📄';
+}
+function formatBytes(b) {
+  if (b<1024) return b+'B';
+  if (b<1048576) return (b/1024).toFixed(1)+'KB';
+  return (b/1048576).toFixed(1)+'MB';
+}
+
+// ===== MODALS =====
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function handleOverlayClick(e, id) { if (e.target === e.currentTarget) closeModal(id); }
+
+// ===== TOAST =====
+function showToast(msg, type='success') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast${type==='error'?' error':type==='info'?' info':''}`;
+  t.innerHTML = msg;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(), 3500);
+}
+
+// ===== INIT ADD OWNER MODAL =====
+document.getElementById('modalAddOwner').addEventListener('click', function(){}, false);
+// reset form on open
+const origOpenModal = openModal;
+
+// Reset add-owner form state
+function resetAddOwnerForm() {
+  document.getElementById('modalAddOwnerTitle').textContent = 'Novo Proprietário';
+  document.getElementById('ownerNameInput').value = '';
+  selectedPhase = '';
+  editingOwnerId = null;
+  document.querySelectorAll('.radio-option').forEach(el=>el.className='radio-option');
+  document.getElementById('matriculasList').innerHTML = `<div class="matricula-item"><input type="text" class="form-input" placeholder="Número da matrícula"></div>`;
+}
+
+// Patch for add owner button on editar page
+document.querySelector('[onclick="openModal(\'modalAddOwner\')"]')?.addEventListener('click', resetAddOwnerForm);
+
+// ensure home card does the same
+</script>
+
+</body>
+</html>
