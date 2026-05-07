@@ -6,7 +6,7 @@
 <title>Águas para Sempre — Gestão Documental</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.1/lib/msal-browser.min.js"></script>
 <style>
 /* ===== VARIABLES ===== */
 :root {
@@ -1494,7 +1494,7 @@ const SHAREPOINT_FILENAME = 'gestao-bb-dados.json';
 const msalConfig = {
   auth: {
     clientId: AZURE_CLIENT_ID,
-    authority: 'https://login.microsoftonline.com/aguasdejoinvillecombr.onmicrosoft.com',
+    authority: 'https://login.microsoftonline.com/1c033778-581b-400c-9437-c9225cefed70',
     redirectUri: window.location.href.split('?')[0].split('#')[0],
   },
   cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
@@ -1507,7 +1507,8 @@ let _syncTimeout   = null;
 
 async function getMsal() {
   if (!_msalInstance) {
-    _msalInstance = new msal.PublicClientApplication(msalConfig);
+    const MsalLib = window.msal || window.msalBrowser;
+    _msalInstance = new MsalLib.PublicClientApplication(msalConfig);
     await _msalInstance.initialize();
   }
   return _msalInstance;
