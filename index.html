@@ -6,7 +6,13 @@
 <title>Águas para Sempre — Gestão Documental</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.1/lib/msal-browser.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-kml@1.1.0/dist/leaflet-kml.min.js"></script>
+<script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
 <style>
 /* ===== VARIABLES ===== */
 :root {
@@ -165,9 +171,9 @@ body {
 }
 .home-cards {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  max-width: 860px;
+  max-width: 960px;
   margin: 0 auto;
 }
 @media (max-width: 640px) { .home-cards { grid-template-columns: 1fr; } }
@@ -208,6 +214,8 @@ body {
 .card-icon.teal { background: linear-gradient(135deg, #E0FAF5, #B5F0E5); }
 .card-icon.orange { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); }
 .card-icon.purple { background: linear-gradient(135deg, #F0E8FF, #DDD0FF); }
+.card-icon.green { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); }
+.card-icon.chart { background: linear-gradient(135deg, #FDE8FF, #F0C8FF); }
 .home-card h3 {
   font-family: var(--font-heading);
   font-size: 18px;
@@ -579,7 +587,7 @@ body {
 .form-select { cursor: pointer; }
 
 /* ===== RADIO GROUP ===== */
-.radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .radio-option {
   display: flex;
   align-items: center;
@@ -595,10 +603,10 @@ body {
   user-select: none;
 }
 .radio-option input { display: none; }
-.radio-option.selected-Interessado { background: #EFF6FF; border-color: #9333EA; color: #9333EA; }
-.radio-option.selected-Manifesto { background: #F0FDF4; border-color: #148dd3; color: #148dd3; }
-.radio-option.selected-Negociação { background: #FFFBEB; border-color: #f0ec07; color: #f0ec07; }
-.radio-option.selected-Adesão { background: #FDF4FF; border-color: #08f814; color: #08f814; }
+.radio-option.selected-Interessado { background: #EFF6FF; border-color: #2563EB; color: #2563EB; }
+.radio-option.selected-Manifesto { background: #F0FDF4; border-color: #16A34A; color: #16A34A; }
+.radio-option.selected-Negociação { background: #FFFBEB; border-color: #D97706; color: #D97706; }
+.radio-option.selected-Adesão { background: #FDF4FF; border-color: #9333EA; color: #9333EA; }
 .radio-option:not([class*="selected"]):hover { border-color: var(--teal); color: var(--accent-2); background: rgba(0,180,216,0.04); }
 
 /* ===== MATRICULA ADDER ===== */
@@ -740,6 +748,9 @@ body {
 }
 .doc-type-option:hover { border-color: var(--teal); color: var(--accent-2); background: rgba(0,180,216,0.04); }
 .doc-type-option.selected { background: linear-gradient(135deg, #E3F6FF, #BDE8F8); border-color: var(--accent); color: var(--primary); font-weight: 600; }
+.doc-type-option.required-missing { background: #FFF5F5; border-color: rgba(232,93,74,0.5); color: var(--danger); }
+.doc-type-option.optional-missing { background: #FFFBEB; border-color: rgba(244,162,40,0.5); color: #B45309; }
+.doc-type-option.already-added { background: #F0FDF8; border-color: rgba(44,184,122,0.5); color: var(--success); }
 .doc-type-option.not-required::after {
   content: 'Opcional';
   font-size: 10px;
@@ -811,7 +822,7 @@ body {
 .tab-btn.active { background: var(--white); color: var(--primary); box-shadow: var(--shadow-sm); }
 
 /* ===== FILE VIEWER MODAL ===== */
-.file-viewer-modal { max-width: 800px; width: 100%; }
+.file-viewer-modal { max-width: 900px; width: 100%; }
 .file-viewer-frame {
   width: 100%;
   min-height: 400px;
@@ -1000,29 +1011,326 @@ body {
   gap: 3px;
   margin-top: 2px;
 }
+
+/* Calendar styles */
+.calendar-event-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  border: 1.5px solid var(--border);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: var(--transition);
+}
+.calendar-event-card:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+.calendar-event-date {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--primary);
+  text-align: center;
+  min-width: 60px;
+  line-height: 1;
+}
+.calendar-event-date small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.calendar-event-info { flex: 1; }
+.calendar-event-info h4 { font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--dark); }
+.calendar-event-info p { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.calendar-event-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+.event-pagamento { background: #FFF3E0; color: #D97706; }
+.event-renovacao { background: #FDF4FF; color: #9333EA; }
+.event-urgente { background: #FFF5F5; color: var(--danger); border: 1px solid rgba(232,93,74,0.3); }
+.event-historico { background: #F3F4F6; color: #6B7280; }
+.empty-calendar { text-align: center; padding: 60px 20px; }
+.empty-calendar-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.4; }
+
+/* Print image clickable */
+.print-image-clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.print-image-clickable:hover {
+  transform: scale(1.01);
+  box-shadow: 0 8px 24px rgba(6,61,92,0.2);
+}
+
+/* Renovacao sub-list */
+.renovacao-sublist {
+  margin-left: 24px;
+  border-left: 2px solid var(--border);
+  padding-left: 16px;
+  margin-top: 4px;
+}
+
+/* Foto section scroll */
+.foto-scroll-container {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0;
+  margin-top: 10px;
+  scroll-behavior: smooth;
+}
+.foto-thumbnail {
+  width: 100px;
+  height: 100px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  background: var(--surface-2);
+}
+.foto-thumbnail:hover { border-color: var(--accent); transform: scale(1.05); box-shadow: var(--shadow); }
+.foto-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.foto-thumbnail .foto-index {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.foto-thumbnail .foto-download-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.foto-thumbnail .foto-download-btn:hover {
+  background: rgba(0,0,0,0.75);
+}
+.foto-batch-collapsible {
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+.foto-batch-header-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+.foto-batch-header-toggle:hover { background: var(--surface-2); }
+.foto-batch-header-toggle .toggle-icon {
+  font-size: 18px;
+  font-weight: 700;
+  width: 24px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+.foto-batch-body {
+  padding: 12px 16px;
+}
+.foto-batch-body.collapsed {
+  display: none;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid var(--surface-2);
+  border-top: 5px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.loading-text {
+  color: #fff;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Lightbox for large image view */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  animation: fadeIn 0.2s ease;
+}
+.lightbox-overlay img {
+  max-width: 95vw;
+  max-height: 95vh;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  cursor: default;
+}
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  font-size: 36px;
+  color: #fff;
+  cursor: pointer;
+  z-index: 10001;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  transition: 0.2s;
+}
+.lightbox-close:hover { background: rgba(255,255,255,0.25); }
+
+/* ===== CHARTS PAGE ===== */
+.charts-grid { display: flex; flex-direction: column; gap: 32px; }
+.chart-card {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 28px 32px;
+  overflow: hidden;
+}
+.chart-card-header { margin-bottom: 20px; }
+.chart-card-header h3 { font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+.chart-card-header p { font-size: 13px; color: var(--muted); }
+.chart-canvas-wrap { position: relative; width: 100%; height: 350px; }
+
+/* ===== DOC SEARCH MODAL ===== */
+.doc-search-list { display: flex; flex-direction: column; gap: 6px; max-height: 340px; overflow-y: auto; margin: 12px 0; padding-right: 4px; }
+.doc-search-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.doc-search-item:hover { border-color: var(--teal); background: var(--white); }
+.doc-search-item.selected { border-color: var(--accent); background: rgba(0,180,216,0.06); }
+.doc-search-item input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+.doc-search-item-info { flex: 1; }
+.doc-search-item-name { font-size: 13.5px; font-weight: 600; color: var(--dark); }
+.doc-search-item-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.doc-search-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+.doc-type-select-wrap { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 12px; max-height: 200px; overflow-y: auto; }
+
+.map-viewer-modal { max-width: 95vw; width: 100%; }
+.map-viewer-container { width: 100%; height: 70vh; border-radius: 12px; overflow: hidden; }
+
+/* ===== SHAPE GROUP COLLAPSIBLE ===== */
+.shape-group-collapsible {
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+.shape-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  cursor: pointer;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+.shape-group-header:hover { background: var(--surface-2); }
+.shape-group-header .toggle-icon {
+  font-size: 18px;
+  font-weight: 700;
+  width: 24px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+.shape-group-body {
+  padding: 12px 18px;
+}
+.shape-group-body.collapsed {
+  display: none;
+}
 </style>
 </head>
 <body>
 
-<!-- LOGIN OVERLAY -->
-<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#063D5C 0%,#0A5C88 50%,#00B4D8 100%);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:0">
-  <div style="background:white;border-radius:24px;padding:48px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.3)">
+<!-- FOLDER PICKER OVERLAY -->
+<div id="loginOverlay" style="display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#063D5C 0%,#0A5C88 50%,#00B4D8 100%);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:0">
+  <div style="background:white;border-radius:24px;padding:48px 40px;max-width:440px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.3)">
     <div style="width:72px;height:72px;background:linear-gradient(135deg,#00B4D8,#48CAE4);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px">💧</div>
     <h2 style="font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:#063D5C;margin-bottom:6px">Águas para Sempre</h2>
     <p style="font-size:13px;color:#6B8A9A;margin-bottom:8px">Gestão Documental · Águas de Joinville</p>
     <div style="height:1px;background:#C8DDE8;margin:20px 0"></div>
-    <p style="font-size:14px;color:#2A4A5E;margin-bottom:24px;line-height:1.6">Faça login com sua <strong>conta Microsoft</strong> da Águas de Joinville para acessar o sistema e sincronizar com o SharePoint.</p>
-    <button id="loginBtn" onclick="toggleOneDriveAuth()" style="width:100%;padding:14px 20px;background:linear-gradient(135deg,#063D5C,#0A5C88);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s">
-      <span>🔐</span> Entrar com conta Microsoft
+    <p style="font-size:14px;color:#2A4A5E;margin-bottom:8px;line-height:1.6">Selecione a pasta base do sistema no seu computador:</p>
+    <div style="background:#EAF4F9;border-radius:10px;padding:12px 16px;margin-bottom:20px;text-align:left;font-size:12px;color:#2A4A5E;font-family:monospace;word-break:break-all">
+      📁 OneDrive - CAJ › GQM - CAS › 06. Pagamento por serviço ambiental › <strong>sistema de gestão BB</strong>
+    </div>
+    <button id="loginBtn" onclick="selectFolder()" style="width:100%;padding:14px 20px;background:linear-gradient(135deg,#063D5C,#0A5C88);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s">
+      <span>📂</span> Selecionar Pasta
     </button>
     <p class="login-status" style="font-size:12px;color:#6B8A9A;margin-top:16px;min-height:18px"></p>
-    <p style="font-size:11px;color:#6B8A9A;margin-top:12px">Acesso restrito a usuários com permissão no SharePoint da equipe</p>
+    <p style="font-size:11px;color:#6B8A9A;margin-top:12px">Os dados ficam salvos direto na sua pasta do OneDrive local</p>
   </div>
 </div>
 
 <!-- HEADER -->
 <header class="header">
-  <div class="header-logo">
+  <div class="header-logo" onclick="navigateTo('home')" style="cursor:pointer;user-select:none" title="Ir para o menu principal">
     <div class="header-logo-icon">💧</div>
     <div>
       <div class="header-title">Águas para Sempre</div>
@@ -1030,15 +1338,22 @@ body {
     </div>
   </div>
   <div class="header-right">
-    <div class="onedrive-badge" onclick="toggleOneDriveAuth()">
+    <button id="syncBtn" class="btn btn-sm btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="syncFromFolder()" title="Ler arquivo gestao-bb-dados.json da pasta e atualizar dados">🔄 Sincronizar</button>
+    <div class="onedrive-badge" onclick="toggleFolderAction()">
       <div class="dot" id="odDot"></div>
-      <span id="odLabel">Conectar OneDrive</span>
+      <span id="odLabel">Selecionar Pasta</span>
     </div>
   </div>
 </header>
 
 <!-- TOAST CONTAINER -->
 <div class="toast-container" id="toastContainer"></div>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay" style="display:none" class="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Salvando, aguarde...</div>
+</div>
 
 <!-- ====== PAGE: HOME ====== -->
 <div class="page active" id="page-home">
@@ -1047,7 +1362,7 @@ body {
       <h1>Sistema de<br><span>Gestão Documental</span></h1>
       <p>Controle completo de documentos, proprietários e matrículas do programa Águas para Sempre.</p>
     </div>
-    <div class="home-cards">
+    <div class="home-cards" style="grid-template-columns:repeat(3,1fr)">
       <div class="home-card" onclick="navigateTo('consultar')">
         <div class="card-icon blue">🔍</div>
         <h3>Consultar Proprietários</h3>
@@ -1069,7 +1384,19 @@ body {
       <div class="home-card" onclick="navigateTo('shapes')">
         <div class="card-icon purple">📐</div>
         <h3>Shapes</h3>
-        <p>Gerencie arquivos KML, shapefiles, PDFs e fotos de mapa por proprietário.</p>
+        <p>Visualize arquivos KML, shapefiles, PDFs e fotos de mapa por proprietário.</p>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="home-card" onclick="navigateTo('calendario')">
+        <div class="card-icon green">📅</div>
+        <h3>Calendário</h3>
+        <p>Próximos eventos e histórico de pagamentos e renovações.</p>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="home-card" onclick="navigateTo('graficos')">
+        <div class="card-icon chart">📊</div>
+        <h3>Gráficos</h3>
+        <p>Painéis visuais: proprietários por fase, matrículas, pagamentos por ano e mais.</p>
         <span class="card-arrow">→</span>
       </div>
     </div>
@@ -1084,6 +1411,9 @@ body {
       <div class="page-header-text">
         <h2>Consultar Proprietários</h2>
         <p>Visualização e download de documentos — modo somente leitura</p>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-accent btn-sm" onclick="openDocSearchModal()">🔎 Buscar apenas documentos</button>
       </div>
     </div>
     <div class="search-bar">
@@ -1122,7 +1452,7 @@ body {
         <p>Cadastro, edição e gerenciamento de documentos</p>
       </div>
       <div class="page-header-actions">
-        <button class="btn btn-accent" onclick="openModal('modalAddOwner')">+ Adicionar Proprietário</button>
+        <button class="btn btn-accent" onclick="openAddOwnerModal()">+ Adicionar Proprietário</button>
       </div>
     </div>
     <div class="search-bar">
@@ -1152,6 +1482,8 @@ body {
       <button class="btn btn-primary btn-sm" onclick="openAddDocModal()">📄 Adicionar Documento</button>
       <button class="btn btn-outline btn-sm" onclick="openAddFotoModal()">📷 Adicionar Fotos</button>
       <button class="btn btn-outline btn-sm" onclick="openAddRelatorioModal()">📋 Adicionar Relatório</button>
+      <button class="btn btn-outline btn-sm" onclick="openAddPrintModal()">📍 Print da Propriedade</button>
+      <button class="btn btn-outline btn-sm" onclick="openAddShapeModal()">📐 Adicionar Shape</button>
     </div>
     <div id="ownerEditorContent"></div>
   </div>
@@ -1164,7 +1496,7 @@ body {
       <div class="btn-back" onclick="navigateTo('home')">←</div>
       <div class="page-header-text">
         <h2>Shapes</h2>
-        <p>Arquivos geoespaciais, KML, PDFs e fotos de mapa por proprietário</p>
+        <p>Visualização de arquivos geoespaciais, KML, PDFs e fotos de mapa por proprietário</p>
       </div>
     </div>
     <div class="search-bar">
@@ -1184,11 +1516,69 @@ body {
         <h2 id="shapesDetailOwnerName">—</h2>
         <p>Arquivos geoespaciais e cartográficos</p>
       </div>
-      <div class="page-header-actions">
-        <button class="btn btn-accent" onclick="openAddShapeModal()">+ Adicionar Arquivo</button>
-      </div>
     </div>
     <div id="shapesDetailContent"></div>
+  </div>
+</div>
+
+<!-- ====== PAGE: CALENDARIO ====== -->
+<div class="page" id="page-calendario">
+  <div class="main">
+    <div class="page-header">
+      <div class="btn-back" onclick="navigateTo('home')">←</div>
+      <div class="page-header-text">
+        <h2>Calendário de Eventos</h2>
+        <p>Próximos pagamentos, renovações e histórico</p>
+      </div>
+    </div>
+    <div class="tab-bar" id="calTabBar">
+      <button class="tab-btn active" onclick="switchCalTab('futuros')">📅 Futuros</button>
+      <button class="tab-btn" onclick="switchCalTab('historico')">🕰️ Histórico</button>
+    </div>
+    <div id="calendarioContent"></div>
+  </div>
+</div>
+
+<!-- ====== PAGE: GRAFICOS ====== -->
+<div class="page" id="page-graficos">
+  <div class="main">
+    <div class="page-header">
+      <div class="btn-back" onclick="navigateTo('home')">←</div>
+      <div class="page-header-text">
+        <h2>Gráficos</h2>
+        <p>Painéis visuais interativos</p>
+      </div>
+    </div>
+    <div class="charts-grid" id="chartsContainer">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <h3>Proprietários por Fase</h3>
+          <p>Distribuição atual das fases dos proprietários</p>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="chartFases"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <h3>Proprietários por Número de Renovações</h3>
+          <p>Quantos proprietários têm 0, 1, 2 ou mais renovações</p>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="chartRenovacoes"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <h3>Matrículas por Proprietário</h3>
+          <p>Distribuição da quantidade de matrículas por proprietário</p>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="chartMatriculas"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <h3>Pagamentos por Ano</h3>
+          <p>Quantidade de eventos de pagamento projetados por ano</p>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="chartPagamentos"></canvas></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1226,6 +1616,13 @@ body {
           </label>
         </div>
       </div>
+      <div class="form-group" id="renewalNumberGroup" style="display:none">
+        <label class="form-label">Número da Renovação <span class="required">*</span></label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="number" class="form-input" id="renewalNumberInput" value="0" min="0" step="1" style="width:100px">
+          <span style="font-size:12px;color:var(--muted)">0 = primeiro contrato, 1+ = N° Renovação</span>
+        </div>
+      </div>
       <div class="form-group">
         <label class="form-label">Matrículas <span class="required">*</span></label>
         <div class="matriculas-list" id="matriculasList">
@@ -1253,7 +1650,7 @@ body {
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Matrícula <span class="required">*</span></label>
-        <select class="form-select" id="docMatricula">
+        <select class="form-select" id="docMatricula" onchange="updateDocTypeColors()">
           <option value="">Selecione...</option>
         </select>
       </div>
@@ -1264,6 +1661,25 @@ body {
       <div class="form-group" id="docDiversoNameGroup" style="display:none">
         <label class="form-label">Nome do Documento <span class="required">*</span></label>
         <input type="text" class="form-input" id="docDiversoName" placeholder="Nome personalizado para este documento">
+      </div>
+      <div class="form-group" id="docProcuracaoIdGroup" style="display:none">
+        <label class="form-label">Documento de Identidade do Procurador <span class="required">*</span></label>
+        <div class="dropzone" id="procuracaoIdDropzone" onclick="document.getElementById('procuracaoIdFileInput').click()" ondrop="handleDrop(event,'procuracaoIdFileInput','procuracaoIdFilesPreview')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <div class="dropzone-icon">🪪</div>
+          <p><strong>Clique para selecionar</strong> o documento de identidade do procurador</p>
+          <input type="file" id="procuracaoIdFileInput" onchange="handleFileChange(event,'procuracaoIdFilesPreview')">
+        </div>
+        <div class="files-preview" id="procuracaoIdFilesPreview"></div>
+      </div>
+      <div class="form-group" id="docTermoAdesaoDateGroup" style="display:none">
+        <label class="form-label">Data da Assinatura <span class="required">*</span></label>
+        <input type="date" class="form-input" id="termoAdesaoDate">
+      </div>
+      <div class="form-group" id="docRenovacaoGroup" style="display:none">
+        <label class="form-label">Número da Renovação <span class="required">*</span></label>
+        <input type="number" class="form-input" id="renovacaoNumber" value="1" min="1" step="1" style="width:100px">
+        <label class="form-label" style="margin-top:10px">Data da Renovação <span class="required">*</span></label>
+        <input type="date" class="form-input" id="renovacaoDate">
       </div>
       <div class="form-group">
         <label class="form-label">Arquivo <span class="required">*</span></label>
@@ -1294,6 +1710,12 @@ body {
     </div>
     <div class="modal-body">
       <div class="form-group">
+        <label class="form-label">Matrícula <span class="required">*</span></label>
+        <select class="form-select" id="fotoMatricula">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label class="form-label">Categoria <span class="required">*</span></label>
         <div class="category-select-group">
           <div class="category-option" onclick="selectFotoCategory('Limpeza de Fossa')" id="catFossa">
@@ -1315,8 +1737,8 @@ body {
         <div class="dropzone" id="fotoDropzone" onclick="document.getElementById('fotoFileInput').click()" ondrop="handleDrop(event,'fotoFileInput','fotoFilesPreview')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
           <div class="dropzone-icon">🖼️</div>
           <p><strong>Clique para selecionar</strong> ou arraste as fotos aqui</p>
-          <p style="font-size:12px;margin-top:6px">Selecione múltiplas fotos simultaneamente</p>
-          <input type="file" id="fotoFileInput" multiple accept="image/*" onchange="handleFileChange(event,'fotoFilesPreview')">
+          <p style="font-size:12px;margin-top:6px">Apenas imagens (PNG, JPEG, JPG). Múltiplas fotos permitidas.</p>
+          <input type="file" id="fotoFileInput" multiple accept="image/png,image/jpeg,image/jpg" onchange="handleFotoFileChange(event)">
         </div>
         <div class="files-preview" id="fotoFilesPreview"></div>
       </div>
@@ -1324,6 +1746,49 @@ body {
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalAddFoto')">Cancelar</button>
       <button class="btn btn-accent" onclick="saveFotos()">Adicionar Fotos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Print da Propriedade Modal -->
+<div class="modal-overlay" id="modalAddPrint" style="display:none" onclick="handleOverlayClick(event,'modalAddPrint')">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="modalAddPrintTitle">Print da Propriedade</h3>
+      <button class="btn-close" onclick="closeModal('modalAddPrint')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="printEditMat" value="">
+      <div class="form-group">
+        <label class="form-label">Matrícula <span class="required">*</span></label>
+        <select class="form-select" id="printMatricula">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link do Google Maps</label>
+        <input type="url" class="form-input" id="printGoogleMapsLink" placeholder="https://maps.google.com/...">
+      </div>
+      <div class="form-group" id="printCurrentImgGroup" style="display:none">
+        <label class="form-label">Imagem Atual</label>
+        <div style="border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--border)">
+          <img id="printCurrentImg" src="" style="width:100%;max-height:200px;object-fit:cover;display:block" alt="Print atual">
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:6px">Selecione um novo arquivo abaixo para substituir. Deixe vazio para manter a imagem atual.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="printImgLabel">Imagem (Print) <span class="required">*</span></label>
+        <div class="dropzone" onclick="document.getElementById('printFileInput').click()" ondrop="handleDrop(event,'printFileInput','printFilesPreview')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <div class="dropzone-icon">📍</div>
+          <p><strong>Clique para selecionar</strong> ou arraste a imagem aqui</p>
+          <input type="file" id="printFileInput" accept="image/*" onchange="handleFileChange(event,'printFilesPreview')">
+        </div>
+        <div class="files-preview" id="printFilesPreview"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalAddPrint')">Cancelar</button>
+      <button class="btn btn-accent" onclick="savePrint()">Salvar Print</button>
     </div>
   </div>
 </div>
@@ -1336,6 +1801,12 @@ body {
       <button class="btn-close" onclick="closeModal('modalAddRelatorio')">✕</button>
     </div>
     <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Matrícula <span class="required">*</span></label>
+        <select class="form-select" id="relatorioMatricula">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
       <div class="form-group">
         <label class="form-label">Categoria <span class="required">*</span></label>
         <div class="category-select-group">
@@ -1374,10 +1845,16 @@ body {
 <div class="modal-overlay" id="modalAddShape" style="display:none" onclick="handleOverlayClick(event,'modalAddShape')">
   <div class="modal modal-lg">
     <div class="modal-header">
-      <h3>Adicionar Arquivo de Shape</h3>
+      <h3>Adicionar Shape</h3>
       <button class="btn-close" onclick="closeModal('modalAddShape')">✕</button>
     </div>
     <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Matrícula <span class="required">*</span></label>
+        <select class="form-select" id="shapeMatricula">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
       <div class="form-group">
         <label class="form-label">Categoria <span class="required">*</span></label>
         <div class="doc-type-grid" id="shapeTypeGrid"></div>
@@ -1387,7 +1864,7 @@ body {
         <div class="dropzone" onclick="document.getElementById('shapeFileInput').click()" ondrop="handleDrop(event,'shapeFileInput','shapeFilesPreview')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
           <div class="dropzone-icon">📐</div>
           <p><strong>Clique para selecionar</strong> ou arraste os arquivos aqui</p>
-          <p style="font-size:12px;margin-top:6px">KML, SHP, PDF, imagens — múltiplos arquivos permitidos</p>
+          <p style="font-size:12px;margin-top:6px">KML, SHP, PDF, imagens — cada arquivo será tratado individualmente</p>
           <input type="file" id="shapeFileInput" multiple onchange="handleFileChange(event,'shapeFilesPreview')">
         </div>
         <div class="files-preview" id="shapeFilesPreview"></div>
@@ -1395,7 +1872,7 @@ body {
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalAddShape')">Cancelar</button>
-      <button class="btn btn-accent" onclick="saveShape()">Adicionar Arquivo</button>
+      <button class="btn btn-accent" onclick="saveShape()">Adicionar Shape(s)</button>
     </div>
   </div>
 </div>
@@ -1417,19 +1894,63 @@ body {
   </div>
 </div>
 
+<!-- Map Viewer Modal -->
+<div class="modal-overlay" id="modalMapViewer" style="display:none" onclick="handleOverlayClick(event,'modalMapViewer')">
+  <div class="modal map-viewer-modal">
+    <div class="modal-header">
+      <h3 id="mapViewerTitle">Visualizar Shape no Mapa</h3>
+      <button class="btn-close" onclick="cleanupMapAndClose()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="mapViewerContainer" class="map-viewer-container"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="cleanupMapAndClose()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Doc Search Modal -->
+<div class="modal-overlay" id="modalDocSearch" style="display:none" onclick="handleOverlayClick(event,'modalDocSearch')">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Buscar Documentos</h3>
+      <button class="btn-close" onclick="closeModal('modalDocSearch')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tipo de Documento</label>
+        <select class="form-select" id="docSearchType" onchange="renderDocSearchList()">
+          <option value="">Todos os tipos...</option>
+        </select>
+      </div>
+      <div class="doc-search-actions">
+        <button class="btn btn-sm btn-outline" onclick="selectAllDocSearch(true)">☑️ Selecionar Todos</button>
+        <button class="btn btn-sm btn-outline" onclick="selectAllDocSearch(false)">☐ Desmarcar Todos</button>
+      </div>
+      <div class="doc-search-list" id="docSearchList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalDocSearch')">Cancelar</button>
+      <button class="btn btn-accent" onclick="downloadSelectedDocs()">⬇ Baixar Selecionados</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== STATE =====
 let state = {
   owners: [],
   oneDriveConnected: false,
   currentOwnerId: null,
+  calTab: 'futuros'
 };
 
 const DOC_TYPES = [
   { key: 'manifesto', label: 'Manifesto', icon: '📄', required: true },
   { key: 'pip', label: 'PIP', icon: '📑', required: true },
-  { key: 'credenciamento', label: 'Credenciamento', icon: '🪪', required: true },
-  { key: 'procuracao', label: 'Procuração', icon: '✍️', required: false },
+  { key: 'credenciamento', label: 'Credenciamento', icon: '🪪', required: false },
+  { key: 'procuracao', label: 'Procuração', icon: '✍️', required: false, needsIdDoc: true },
   { key: 'id', label: 'Documento de Identificação', icon: '🪪', required: true },
   { key: 'comprovante', label: 'Comprovante de Residência', icon: '🏠', required: true },
   { key: 'matricula', label: 'Registro Geral (Matrícula)', icon: '📋', required: true },
@@ -1437,8 +1958,13 @@ const DOC_TYPES = [
   { key: 'car', label: 'CAR', icon: '🌱', required: true },
   { key: 'tac', label: 'Declaração TAC', icon: '📜', required: true },
   { key: 'uso_imagem', label: 'Uso de Imagem', icon: '🎥', required: true },
-  { key: 'retificacao', label: 'Autorização de Retificação', icon: '📝', required: true },
+  { key: 'retificacao_car', label: 'Autorização de Retificação do CAR', icon: '📝', required: false },
+  { key: 'retificacao_siout', label: 'Autorização de Retificação do SIOUT', icon: '📝', required: false },
   { key: 'topografico', label: 'Levantamento Topográfico', icon: '📐', required: false },
+  { key: 'certidao_casamento', label: 'Certidão de Casamento', icon: '💍', required: false },
+  { key: 'certidao_obito', label: 'Certidão de Óbito', icon: '🕊️', required: false },
+  { key: 'termo_adesao', label: 'Termo de Adesão', icon: '📜', required: false, hasSignatureDate: true },
+  { key: 'renovacao', label: 'Renovação', icon: '🔄', required: false, hasRenewalInfo: true, isMultiple: true },
   { key: 'diverso', label: 'Documento Diverso', icon: '📁', required: false },
 ];
 
@@ -1451,29 +1977,101 @@ const SHAPE_TYPES = [
 
 const REQUIRED_DOCS = DOC_TYPES.filter(d => d.required).map(d => d.key);
 
+// Cache em memória para thumbnails (não persistente)
+const thumbCache = {};
+
 // ===== LOCALSTORAGE =====
+// Migra um owner do formato antigo para o formato atual.
+// Chamada tanto no loadState (localStorage) quanto no loadFromFolder (JSON da pasta).
+function migrateOwner(owner) {
+  // Migração de renovacoes embutidas em docs
+  if (owner.docs) {
+    Object.keys(owner.docs).forEach(mat => {
+      const docs = owner.docs[mat];
+      if (!Array.isArray(docs)) return;
+      const renovacoes = docs.filter(d => d.type === 'renovacao');
+      if (renovacoes.length > 0) {
+        const otherDocs = docs.filter(d => d.type !== 'renovacao');
+        if (!owner.renovacoes) owner.renovacoes = {};
+        if (!owner.renovacoes[mat]) owner.renovacoes[mat] = [];
+        renovacoes.forEach(r => { owner.renovacoes[mat].push(r); });
+        owner.docs[mat] = otherDocs;
+      }
+    });
+  }
+  if (!owner.propertyPrints) owner.propertyPrints = {};
+  // Migração do formato antigo de fotos: array esparso -> objeto keyed por mat.
+  // No formato antigo, fotos era armazenado como array JS onde fotos[matId] = [batches],
+  // causando arrays gigantes com a maioria dos índices nulos ao serializar para JSON.
+  if (Array.isArray(owner.fotos)) {
+    const newFotos = {};
+    owner.fotos.forEach((item, idx) => {
+      if (item == null) return;
+      const key = String(idx);
+      if (Array.isArray(item)) {
+        // Formato correto: fotos[mat] = [batch, batch, ...]
+        newFotos[key] = item;
+      } else if (item && typeof item === 'object') {
+        // Batch avulso neste índice — agrupa sob a mesma chave
+        if (!newFotos[key]) newFotos[key] = [];
+        newFotos[key].push(item);
+      }
+    });
+    owner.fotos = newFotos;
+  }
+  if (!owner.fotos || typeof owner.fotos !== 'object' || Array.isArray(owner.fotos)) owner.fotos = {};
+  if (!owner.relatorios) owner.relatorios = {};
+  if (!owner.shapes) owner.shapes = [];
+}
+
 function loadState() {
-  const saved = localStorage.getItem('aguasParaSempre_v2');
+  const saved = localStorage.getItem('aguasParaSempre_v4');
   if (saved) {
     try { state = JSON.parse(saved); } catch(e) {}
+    if (state.owners) {
+      state.owners.forEach(owner => migrateOwner(owner));
+    }
   }
 }
 function saveState() {
-  localStorage.setItem('aguasParaSempre_v2', JSON.stringify(state));
-  syncToSharePoint();
+  state.lastModified = Date.now(); // marca a hora exata da alteração
+  try {
+    const stateToPersist = JSON.parse(JSON.stringify(state));
+    if (stateToPersist.owners) {
+      stateToPersist.owners.forEach(owner => {
+        if (owner.propertyPrints) {
+          Object.keys(owner.propertyPrints).forEach(mat => {
+            if (owner.propertyPrints[mat]) delete owner.propertyPrints[mat].dataUrl;
+          });
+        }
+        if (owner.fotos && typeof owner.fotos === 'object' && !Array.isArray(owner.fotos)) {
+          Object.keys(owner.fotos).forEach(mat => {
+            if (Array.isArray(owner.fotos[mat])) {
+              owner.fotos[mat].forEach(batch => {
+                if (batch) delete batch.thumbnailDataUrls;
+              });
+            }
+          });
+        }
+      });
+    }
+    localStorage.setItem('aguasParaSempre_v4', JSON.stringify(stateToPersist));
+  } catch(e) { console.warn('localStorage save failed:', e); }
+  saveToFolder();
 }
 loadState();
 
 // ===== NAVIGATION =====
-let history_stack = ['home'];
 function navigateTo(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
+  const targetPage = document.getElementById('page-' + page);
+  if (targetPage) targetPage.classList.add('active');
   window.scrollTo(0, 0);
-
   if (page === 'consultar') renderConsultarList();
   if (page === 'editar') renderEditarList();
   if (page === 'shapes') renderShapesList();
+  if (page === 'calendario') renderCalendario();
+  if (page === 'graficos') renderGraficos();
 }
 
 function abrirMapa() {
@@ -1481,231 +2079,391 @@ function abrirMapa() {
   showToast('🗺️ Abrindo mapa interativo...', 'info');
 }
 
-// ===== ONEDRIVE / SHAREPOINT CONFIG =====
-// ⬇ ÚNICO LUGAR QUE VOCÊ PRECISA EDITAR ⬇
-// Após registrar o app no Azure Portal, cole o Client ID abaixo:
-const AZURE_CLIENT_ID = '6fb3a3ab-6c52-4a58-855b-bcf25756cd5b';
+function openAddOwnerModal() { resetAddOwnerForm(); openModal('modalAddOwner'); }
 
-const SHAREPOINT_HOST     = 'https://aguasdejoinvillecombr.sharepoint.com';
-const SHAREPOINT_SITE     = '/sites/GQM';
-const SHAREPOINT_FOLDER   = 'Documentos Compartilhados/CAS/06. Pagamento por serviço ambiental/sistema de gestão BB';
-const SHAREPOINT_FILENAME = 'gestao-bb-dados.json';
+// ===== PASTA LOCAL =====
+const FS_FILENAME = 'gestao-bb-dados.json';
+let _folderHandle = null;
+let _saveMutex = false;   // impede salvamentos simultâneos
 
-const msalConfig = {
-  auth: {
-    clientId: AZURE_CLIENT_ID,
-    authority: 'https://login.microsoftonline.com/1c033778-581b-400c-9437-c9225cefed70',
-    redirectUri: window.location.href.split('?')[0].split('#')[0],
-  },
-  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
-};
-const SCOPES = ['Files.ReadWrite', 'Sites.ReadWrite.All', 'User.Read'];
-
-let _msalInstance = null;
-let _accessToken   = null;
-let _syncTimeout   = null;
-
-async function getMsal() {
-  if (!_msalInstance) {
-    const MsalLib = window.msal || window.msalBrowser;
-    _msalInstance = new MsalLib.PublicClientApplication(msalConfig);
-    await _msalInstance.initialize();
-  }
-  return _msalInstance;
+function openIDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('aguasParaSempre', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('handles');
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = () => rej(req.error);
+  });
+}
+async function saveHandleIDB(handle) {
+  const db = await openIDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('handles', 'readwrite');
+    tx.objectStore('handles').put(handle, 'folder');
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+async function loadHandleIDB() {
+  const db = await openIDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('handles', 'readonly');
+    const req = tx.objectStore('handles').get('folder');
+    req.onsuccess = () => res(req.result || null);
+    req.onerror   = () => rej(req.error);
+  });
+}
+async function clearHandleIDB() {
+  const db = await openIDB();
+  return new Promise((res) => {
+    const tx = db.transaction('handles', 'readwrite');
+    tx.objectStore('handles').delete('folder');
+    tx.oncomplete = res;
+  });
 }
 
-async function getToken() {
-  const instance = await getMsal();
-  const accounts = instance.getAllAccounts();
-  if (!accounts.length) throw new Error('Não autenticado');
+async function selectFolder() {
+  const btn = document.getElementById('loginBtn'), status = document.querySelector('.login-status');
+  btn.disabled = true; btn.innerHTML = '<span>⏳</span> Aguardando seleção...';
   try {
-    const r = await instance.acquireTokenSilent({ scopes: SCOPES, account: accounts[0] });
-    _accessToken = r.accessToken;
-    return _accessToken;
-  } catch {
-    const r = await instance.acquireTokenPopup({ scopes: SCOPES });
-    _accessToken = r.accessToken;
-    return _accessToken;
-  }
-}
-
-// ─── Login ───────────────────────────────────────────────────────────────────
-async function toggleOneDriveAuth() {
-  const loginOverlay = document.getElementById('loginOverlay');
-
-  if (state.oneDriveConnected) {
-    if (!confirm('Deseja desconectar do OneDrive?')) return;
-    state.oneDriveConnected = false;
-    state.odUser = null;
-    _accessToken = null;
-    localStorage.removeItem('aguasParaSempre_v2');
-    saveState();
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    _folderHandle = handle;
+    await saveHandleIDB(handle);
+    status.textContent = '📂 Carregando dados da pasta...';
+    await loadFromFolder();
+    await restorePrintDataUrls();
+    document.getElementById('loginOverlay').style.display = 'none';
+    state.oneDriveConnected = true; state.odUser = handle.name;
+    localStorage.setItem('aguasParaSempre_v4', JSON.stringify(state));
     updateODStatus();
-    loginOverlay.style.display = 'flex';
-    showToast('OneDrive desconectado', 'info');
-    return;
-  }
-
-  const btn = document.getElementById('loginBtn');
-  btn.disabled = true;
-  btn.textContent = 'Conectando...';
-
-  try {
-    if (AZURE_CLIENT_ID === 'SEU_CLIENT_ID_AQUI') {
-      throw new Error('Configure o AZURE_CLIENT_ID no arquivo HTML primeiro.');
-    }
-    const instance = await getMsal();
-    const result   = await instance.loginPopup({ scopes: SCOPES });
-    if (!result) throw new Error('Login cancelado');
-
-    _accessToken = result.accessToken;
-    state.oneDriveConnected = true;
-    state.odUser = result.account?.name || result.account?.username || 'Usuário';
-
-    // Carrega dados do SharePoint
-    loginOverlay.querySelector('.login-status').textContent = '☁️ Carregando dados do SharePoint...';
-    await loadFromSharePoint();
-
-    loginOverlay.style.display = 'none';
-    updateODStatus();
-    showToast('✅ Conectado como ' + state.odUser);
+    showToast('✅ Pasta conectada: ' + handle.name);
     renderConsultarList();
   } catch(e) {
-    showToast('Erro: ' + (e.message || e), 'error');
-    btn.disabled = false;
-    btn.textContent = '🔐 Entrar com conta Microsoft';
-    loginOverlay.querySelector('.login-status').textContent = '❌ ' + (e.message || 'Erro ao conectar');
+    if (e.name !== 'AbortError') { status.textContent = '❌ ' + (e.message || 'Erro ao acessar pasta'); showToast('Erro ao acessar pasta', 'error'); }
+    btn.disabled = false; btn.innerHTML = '<span>📂</span> Selecionar Pasta';
   }
 }
 
-// ─── Carregar dados do SharePoint ────────────────────────────────────────────
-async function loadFromSharePoint() {
+async function loadFromFolder() {
+  if (!_folderHandle) return 'no_handle';
   try {
-    const token = await getToken();
-    const url = `${SHAREPOINT_HOST}${SHAREPOINT_SITE}/_api/web/GetFileByServerRelativeUrl` +
-      `('${SHAREPOINT_SITE}/${encodeURIComponent(SHAREPOINT_FOLDER)}/${SHAREPOINT_FILENAME}')/$value`;
-
-    const res = await fetch(url, {
-      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.owners) {
-        // Mescla: preserva a conexão ativa e carrega o resto do SharePoint
-        const connected = state.oneDriveConnected;
-        const user = state.odUser;
-        state = { ...data, oneDriveConnected: connected, odUser: user };
-        localStorage.setItem('aguasParaSempre_v2', JSON.stringify(state));
-        showToast('☁️ Dados carregados do SharePoint!', 'info');
+    const fileHandle = await _folderHandle.getFileHandle(FS_FILENAME);
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (data && data.owners) {
+      const localModified  = state.lastModified  || 0;
+      const folderModified = data.lastModified   || 0;
+      if (folderModified >= localModified) {
+        state = { ...data, oneDriveConnected: true, odUser: _folderHandle.name };
+        // Aplica migrações de formato (ex: fotos array esparso -> objeto)
+        if (state.owners) state.owners.forEach(owner => migrateOwner(owner));
+        localStorage.setItem('aguasParaSempre_v4', JSON.stringify(state));
+        return 'loaded'; // pasta era mais recente, dados carregados
+      } else {
+        // localStorage é mais recente — sincroniza a pasta com o estado local
+        state.oneDriveConnected = true;
+        state.odUser = _folderHandle.name;
+        await saveToFolder();
+        return 'pushed'; // local era mais recente, dados enviados à pasta
       }
-    } else if (res.status === 404) {
-      // Arquivo ainda não existe — primeiro uso, ok
-      showToast('☁️ Novo arquivo será criado no SharePoint', 'info');
+    }
+    return 'invalid'; // JSON sem owners
+  } catch(e) {
+    if (e.name === 'NotFoundError') return 'not_found';
+    console.warn('Erro ao ler arquivo:', e);
+    return 'error';
+  }
+}
+
+async function syncFromFolder() {
+  if (!_folderHandle) {
+    showToast('Nenhuma pasta conectada. Selecione a pasta primeiro.', 'error');
+    document.getElementById('loginOverlay').style.display = 'flex';
+    return;
+  }
+  const syncBtn = document.getElementById('syncBtn');
+  if (syncBtn) { syncBtn.disabled = true; syncBtn.textContent = '⏳ Sincronizando...'; }
+  // Garante a permissão com gesto do usuário (este clique conta)
+  try {
+    const perm = await _folderHandle.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') {
+      const newPerm = await _folderHandle.requestPermission({ mode: 'readwrite' });
+      if (newPerm !== 'granted') {
+        showToast('Permissão de leitura/gravação negada. Selecione a pasta novamente.', 'error');
+        document.getElementById('loginOverlay').style.display = 'flex';
+        return;
+      }
+    }
+    showLoading();
+    const status = await loadFromFolder();
+    if (status === 'loaded') {
+      await restorePrintDataUrls();
+      renderConsultarList();
+      showToast('✅ Dados carregados da pasta!', 'success');
+    } else if (status === 'pushed') {
+      renderConsultarList();
+      showToast('✅ Dados locais mais recentes enviados à pasta.', 'success');
+    } else if (status === 'not_found') {
+      showToast('⚠️ Arquivo "' + FS_FILENAME + '" não encontrado na pasta. Salve um registro primeiro para criá-lo.', 'error');
+    } else if (status === 'invalid') {
+      showToast('⚠️ Arquivo de dados na pasta está em formato inválido ou vazio.', 'error');
     } else {
-      console.warn('SharePoint load status:', res.status);
+      showToast('❌ Erro ao ler o arquivo da pasta. Verifique o console.', 'error');
     }
   } catch(e) {
-    console.warn('Erro ao carregar do SharePoint:', e);
+    showToast('Erro ao sincronizar: ' + e.message, 'error');
+  } finally {
+    hideLoading();
+    if (syncBtn) { syncBtn.disabled = false; syncBtn.innerHTML = '🔄 Sincronizar'; }
   }
 }
 
-// ─── Salvar dados no SharePoint (com debounce de 2s) ─────────────────────────
-async function syncToSharePoint() {
-  if (!state.oneDriveConnected) return;
-  clearTimeout(_syncTimeout);
-  _syncTimeout = setTimeout(async () => {
-    try {
-      const token  = await getToken();
-      const body   = JSON.stringify(state);
-
-      // Graph API — upload para SharePoint
-      const siteUrl  = `${SHAREPOINT_HOST}${SHAREPOINT_SITE}`;
-      const filePath = `${SHAREPOINT_FOLDER}/${SHAREPOINT_FILENAME}`;
-
-      // Primeiro precisa do Drive ID do site
-      const siteRes  = await fetch(`https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_HOST.replace('https://','')}/sites/GQM`,
-        { headers: { Authorization: 'Bearer ' + token } });
-
-      let uploadUrl;
-      if (siteRes.ok) {
-        const siteData = await siteRes.json();
-        const siteId   = siteData.id;
-        uploadUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${filePath}:/content`;
-      } else {
-        // Fallback: usa SharePoint REST API
-        uploadUrl = `${SHAREPOINT_HOST}${SHAREPOINT_SITE}/_api/web/GetFolderByServerRelativeUrl` +
-          `('${SHAREPOINT_SITE}/${SHAREPOINT_FOLDER}')/Files/add(url='${SHAREPOINT_FILENAME}',overwrite=true)`;
-      }
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: siteRes.ok ? 'PUT' : 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json',
-          ...(siteRes.ok ? {} : { 'Accept': 'application/json;odata=verbose', 'X-RequestDigest': await getFormDigest(token) })
-        },
-        body: body
-      });
-
-      if (uploadRes.ok) {
-        const dot = document.getElementById('odDot');
-        dot.style.boxShadow = '0 0 8px var(--success)';
-        setTimeout(() => { dot.style.boxShadow = ''; }, 1500);
-      } else {
-        console.warn('SharePoint sync falhou:', uploadRes.status);
-      }
-    } catch(e) {
-      console.warn('Erro no sync:', e);
-    }
-  }, 2000);
-}
-
-async function getFormDigest(token) {
+async function saveToFolder() {
+  if (!_folderHandle) return;
+  if (_saveMutex) return;        // já existe um salvamento em andamento
+  _saveMutex = true;
   try {
-    const res = await fetch(`${SHAREPOINT_HOST}${SHAREPOINT_SITE}/_api/contextinfo`, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=verbose' }
-    });
-    const data = await res.json();
-    return data?.d?.GetContextWebInformation?.FormDigestValue || '';
-  } catch { return ''; }
+    // pequeno atraso para consolidar múltiplas chamadas (50ms)
+    await new Promise(r => setTimeout(r, 50));
+    const fileHandle = await _folderHandle.getFileHandle(FS_FILENAME, { create: true });
+    const writable = await fileHandle.createWritable();
+    const toSave = JSON.parse(JSON.stringify(state));
+    if (toSave.owners) {
+      toSave.owners.forEach(owner => {
+        if (owner.propertyPrints) {
+          Object.keys(owner.propertyPrints).forEach(mat => {
+            if (owner.propertyPrints[mat]) delete owner.propertyPrints[mat].dataUrl;
+          });
+        }
+        if (owner.fotos && typeof owner.fotos === 'object' && !Array.isArray(owner.fotos)) {
+          Object.keys(owner.fotos).forEach(mat => {
+            if (Array.isArray(owner.fotos[mat])) {
+              owner.fotos[mat].forEach(batch => {
+                if (batch) delete batch.thumbnailDataUrls;
+              });
+            }
+          });
+        }
+      });
+    }
+    await writable.write(JSON.stringify(toSave, null, 2));
+    await writable.close();
+    const dot = document.getElementById('odDot');
+    dot.style.boxShadow = '0 0 8px var(--success)';
+    setTimeout(() => { dot.style.boxShadow = ''; }, 1500);
+  } catch(e) {
+    console.warn('Erro ao salvar na pasta:', e);
+    // Avisa o usuário se o salvamento na pasta falhar (ex: permissão revogada)
+    showToast('⚠️ Não foi possível salvar na pasta. Dados preservados localmente.', 'error');
+  } finally {
+    _saveMutex = false;
+  }
 }
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
-function updateODStatus() {
-  const dot   = document.getElementById('odDot');
-  const label = document.getElementById('odLabel');
+function sanitizeFolderName(name) { return (name||'untitled').replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').trim() || 'untitled'; }
+async function getOrCreateDir(parentHandle, name, create=false) { return parentHandle.getDirectoryHandle(sanitizeFolderName(name), { create }); }
+
+// Converte um File/Blob para dataUrl (base64)
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Restaura o dataUrl das prints da propriedade lendo os arquivos físicos da pasta.
+// O dataUrl NÃO é salvo no JSON (evita arquivo gigante), mas o localPath é.
+// Esta função precisa ser chamada após qualquer carga de dados da pasta.
+async function restorePrintDataUrls() {
+  if (!_folderHandle) return;
+  for (const owner of (state.owners || [])) {
+    for (const mat of Object.keys(owner.propertyPrints || {})) {
+      const print = owner.propertyPrints[mat];
+      if (print && !print.dataUrl && print.localPath) {
+        try {
+          const file = await readFileFromPath(print.localPath);
+          if (file) {
+            print.dataUrl = await fileToDataUrl(file);
+          }
+        } catch(e) {
+          console.warn('Não foi possível restaurar print de', mat, e);
+        }
+      }
+    }
+  }
+}
+
+async function saveFileToFolder(ownerName, subPath, file, newFileName) {
+  if (!_folderHandle) return;
+  try {
+    let dir = await getOrCreateDir(_folderHandle, ownerName, true);
+    for (const part of subPath) dir = await getOrCreateDir(dir, part, true);
+    const fh = await dir.getFileHandle(sanitizeFolderName(newFileName), { create: true });
+    const writable = await fh.createWritable();
+    await writable.write(file);
+    await writable.close();
+  } catch(e) { console.warn('Erro ao salvar arquivo na pasta:', e); }
+}
+
+async function readFileFromPath(pathParts) {
+  if (!_folderHandle || !pathParts?.length) return null;
+  try {
+    let handle = _folderHandle;
+    for (let i = 0; i < pathParts.length - 1; i++) handle = await handle.getDirectoryHandle(sanitizeFolderName(pathParts[i]));
+    const fh = await handle.getFileHandle(sanitizeFolderName(pathParts[pathParts.length-1]));
+    return await fh.getFile();
+  } catch(e) { return null; }
+}
+
+async function deleteFileFromPath(pathParts) {
+  if (!_folderHandle || !pathParts?.length) return;
+  try {
+    let handle = _folderHandle;
+    for (let i = 0; i < pathParts.length - 1; i++) handle = await handle.getDirectoryHandle(sanitizeFolderName(pathParts[i]));
+    await handle.removeEntry(sanitizeFolderName(pathParts[pathParts.length-1]));
+  } catch(e) { console.warn('Erro ao deletar arquivo da pasta:', e); }
+}
+
+async function toggleFolderAction() {
   if (state.oneDriveConnected) {
-    dot.className   = 'dot connected';
-    label.textContent = state.odUser || 'Conectado';
+    if (!confirm('Deseja trocar a pasta ou desconectar?')) return;
+    _folderHandle = null; state.oneDriveConnected = false; state.odUser = null;
+    await clearHandleIDB();
+    localStorage.removeItem('aguasParaSempre_v4');
+    updateODStatus();
+    document.getElementById('loginOverlay').style.display = 'flex';
+    showToast('Pasta desconectada', 'info');
   } else {
-    dot.className   = 'dot';
-    label.textContent = 'Conectar OneDrive';
+    document.getElementById('loginOverlay').style.display = 'flex';
   }
 }
-updateODStatus();
 
-// ─── Exibe overlay de login se não autenticado ────────────────────────────────
-(function checkLoginOnLoad() {
-  if (!state.oneDriveConnected) {
-    const overlay = document.getElementById('loginOverlay');
-    if (overlay) overlay.style.display = 'flex';
-  }
+function updateODStatus() {
+  const dot = document.getElementById('odDot'), label = document.getElementById('odLabel');
+  if (state.oneDriveConnected) { dot.className = 'dot connected'; label.textContent = '📂 ' + (state.odUser || 'Pasta conectada'); }
+  else { dot.className = 'dot'; label.textContent = 'Selecionar Pasta'; }
+}
+
+(async function initFolderAccess() {
+  try {
+    const handle = await loadHandleIDB();
+    if (!handle) { updateODStatus(); return; } // overlay já está visível (display:flex)
+    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    if (perm === 'granted') {
+      _folderHandle = handle; state.oneDriveConnected = true; state.odUser = handle.name;
+      document.getElementById('loginOverlay').style.display = 'none';
+      await loadFromFolder();
+      await restorePrintDataUrls();
+      updateODStatus(); renderConsultarList();
+    } else {
+      // perm === 'prompt' ou 'denied' — mantém overlay visível para forçar reconexão
+      // Pré-preenche o nome da pasta para o usuário saber qual selecionar novamente
+      const status = document.querySelector('.login-status');
+      if (status) status.textContent = '⚠️ Clique em "Selecionar Pasta" para reconectar: ' + handle.name;
+      updateODStatus();
+    }
+  } catch(e) { updateODStatus(); } // overlay permanece visível
 })();
+
+// ===== HELPERS RENOVACAO =====
+function getRenovacoesArray(owner, mat) {
+  if (!owner || !mat) return [];
+  if (!owner.renovacoes) owner.renovacoes = {};
+  if (!owner.renovacoes[mat]) owner.renovacoes[mat] = [];
+  return owner.renovacoes[mat];
+}
+
+// ===== LOADING OVERLAY =====
+function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
+function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+
+// ===== FOTO BATCH TOGGLE =====
+async function toggleFotoBatch(header) {
+  const body = header.nextElementSibling;
+  const icon = header.querySelector('.toggle-icon');
+  const isCollapsed = body.classList.contains('collapsed');
+  if (isCollapsed) {
+    body.classList.remove('collapsed');
+    icon.textContent = '[-]';
+    const imgs = body.querySelectorAll('img[data-photo-key]');
+    for (const img of imgs) {
+      const key = img.getAttribute('data-photo-key');
+      if (!thumbCache[key]) {
+        const [ownerId, mat, batchIdx, fileIdx] = key.split('|');
+        const owner = state.owners.find(o => o.id === ownerId);
+        if (owner?.fotos?.[mat]) {
+          const batch = owner.fotos[mat][batchIdx];
+          if (batch) {
+            const localPath = batch.localPaths?.[fileIdx];
+            if (localPath && _folderHandle) {
+              try {
+                const file = await readFileFromPath(localPath);
+                if (file) {
+                  const thumbUrl = await generateThumbnailFromFile(file);
+                  thumbCache[key] = thumbUrl;
+                  img.src = thumbUrl;
+                }
+              } catch(e) {}
+            }
+          }
+        }
+      } else {
+        img.src = thumbCache[key];
+      }
+    }
+  } else {
+    body.classList.add('collapsed');
+    icon.textContent = '[+]';
+  }
+}
+
+function generateThumbnailFromFile(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 100;
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > MAX) { h *= MAX/w; w = MAX; } } else { if (h > MAX) { w *= MAX/h; h = MAX; } }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.7));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ===== SHAPE GROUP TOGGLE =====
+function toggleShapeGroup(header) {
+  const body = header.nextElementSibling;
+  const icon = header.querySelector('.toggle-icon');
+  const isCollapsed = body.classList.contains('collapsed');
+  if (isCollapsed) {
+    body.classList.remove('collapsed');
+    icon.textContent = '[-]';
+  } else {
+    body.classList.add('collapsed');
+    icon.textContent = '[+]';
+  }
+}
 
 // ===== RENDER CONSULTAR LIST =====
 function renderConsultarList() {
-  const container = document.getElementById('ownerListConsultar');
-  const statsEl = document.getElementById('statsConsultar');
+  const container = document.getElementById('ownerListConsultar'), statsEl = document.getElementById('statsConsultar');
   const q = document.getElementById('searchConsultar').value.toLowerCase();
   let owners = state.owners;
   if (q) owners = owners.filter(o => o.name.toLowerCase().includes(q) || (o.phase||'').toLowerCase().includes(q) || (o.matriculas||[]).some(m=>m.toLowerCase().includes(q)));
 
-  // Stats
   const totalOwners = state.owners.length;
   const totalDocs = state.owners.reduce((a,o)=>{
-    return a + Object.values(o.docs||{}).reduce((b,mDocs)=>b+(mDocs||[]).length,0);
+    let count = Object.values(o.docs||{}).reduce((b,mDocs)=>b+(mDocs||[]).length,0);
+    Object.values(o.renovacoes||{}).forEach(arr => count += arr.length);
+    return a + count;
   }, 0);
   const allComplete = state.owners.filter(o=>{
     const mats = o.matriculas||[];
@@ -1726,39 +2484,23 @@ function renderConsultarList() {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><h3>${q ? 'Nenhum resultado encontrado' : 'Não há proprietários cadastrados'}</h3><p>${q ? 'Tente outro termo de busca.' : 'Acesse "Editar Documentos e Proprietários" para cadastrar.'}</p></div>`;
     return;
   }
-
   container.innerHTML = `<div class="owner-grid">${owners.map(o=>ownerCardHTML(o,'consultar')).join('')}</div>`;
 }
 
 function ownerCardHTML(owner, mode) {
-  const mats = owner.matriculas||[];
-  const docs = owner.docs||{};
-  let totalRequired = mats.length * REQUIRED_DOCS.length;
-  let totalDone = 0;
-  mats.forEach(m=>{
-    const mDocs = (docs[m]||[]).map(d=>d.type);
-    REQUIRED_DOCS.forEach(rd=>{ if(mDocs.includes(rd)) totalDone++; });
-  });
+  const mats = owner.matriculas||[], docs = owner.docs||{};
+  let totalRequired = mats.length * REQUIRED_DOCS.length, totalDone = 0;
+  mats.forEach(m=>{ const mDocs = (docs[m]||[]).map(d=>d.type); REQUIRED_DOCS.forEach(rd=>{ if(mDocs.includes(rd)) totalDone++; }); });
   const pct = totalRequired > 0 ? Math.round(totalDone/totalRequired*100) : 0;
   const initial = owner.name.charAt(0).toUpperCase();
-  const onclick = mode === 'consultar'
-    ? `openOwnerDetail('${owner.id}')`
-    : `openOwnerEditor('${owner.id}')`;
-
-  return `
-    <div class="owner-card" onclick="${onclick}">
-      <div class="owner-card-header">
-        <div class="owner-avatar">${initial}</div>
-        <span class="phase-badge phase-${owner.phase}">${owner.phase}</span>
-      </div>
-      <h3>${owner.name}</h3>
-      <div class="matriculas-count">${mats.length} matrícula${mats.length!==1?'s':''}</div>
-      <div class="doc-progress">
-        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-        <span class="progress-text">${totalDone}/${totalRequired} docs</span>
-      </div>
-    </div>
-  `;
+  const onclick = mode === 'consultar' ? `openOwnerDetail('${owner.id}')` : `openOwnerEditor('${owner.id}')`;
+  const renewalLabel = (owner.phase === 'Adesão' && owner.renewalNumber > 0) ? ` — N° Renovação ${owner.renewalNumber}` : '';
+  const missingSet = new Set();
+  mats.forEach(m => { const mDocs = (docs[m]||[]).map(d=>d.type); REQUIRED_DOCS.forEach(rd => { if (!mDocs.includes(rd)) missingSet.add(rd); }); });
+  const missingDocsHTML = (mode === 'editar' && missingSet.size > 0)
+    ? `<div style="margin-top:10px;padding:8px 10px;background:#FFF5F5;border-radius:8px;border:1px solid rgba(232,93,74,0.22)"><div style="font-size:10.5px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">⚠ Docs Faltando</div>${[...missingSet].map(rd => { const dt = DOC_TYPES.find(d=>d.key===rd); return `<div style="font-size:11.5px;color:var(--danger);display:flex;align-items:center;gap:4px;padding:1px 0">🔴 ${dt?dt.label:rd}</div>`; }).join('')}</div>`
+    : (mode === 'editar' && missingSet.size === 0 && mats.length > 0) ? `<div style="margin-top:8px;padding:5px 10px;background:#F0FDF8;border-radius:8px;border:1px solid rgba(44,184,122,0.2);font-size:11.5px;color:var(--success);font-weight:600">✅ Documentação completa</div>` : '';
+  return `<div class="owner-card" onclick="${onclick}"><div class="owner-card-header"><div class="owner-avatar">${initial}</div><span class="phase-badge phase-${owner.phase}">${owner.phase}${renewalLabel}</span></div><h3>${owner.name}</h3><div class="matriculas-count">${mats.length} matrícula${mats.length!==1?'s':''}</div>${missingDocsHTML}<div class="doc-progress" style="margin-top:12px"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><span class="progress-text">${totalDone}/${totalRequired} docs</span></div></div>`;
 }
 
 // ===== OPEN OWNER DETAIL =====
@@ -1767,7 +2509,7 @@ function openOwnerDetail(id) {
   if (!owner) return;
   state.currentOwnerId = id;
   document.getElementById('detailOwnerName').textContent = owner.name;
-  document.getElementById('detailPhaseBadge').innerHTML = `<span class="phase-badge phase-${owner.phase}">${owner.phase}</span>`;
+  document.getElementById('detailPhaseBadge').innerHTML = `<span class="phase-badge phase-${owner.phase}">${owner.phase}${(owner.phase==='Adesão'&&owner.renewalNumber>0)?` — N° Renovação ${owner.renewalNumber}`:''}</span>`;
   renderOwnerDetail(owner, false);
   navigateTo('owner-detail');
 }
@@ -1775,114 +2517,87 @@ function openOwnerDetail(id) {
 function renderOwnerDetail(owner, editMode) {
   const container = document.getElementById('ownerDetailContent');
   const mats = owner.matriculas||[];
-  const docs = owner.docs||{};
-  const fotos = owner.fotos||[];
-  const relatorios = owner.relatorios||[];
-
-  if (mats.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📂</div><h3>Sem matrículas</h3><p>Edite o proprietário para adicionar matrículas.</p></div>`;
-    return;
-  }
-
+  if (mats.length === 0) { container.innerHTML = `<div class="empty-state"><div class="empty-icon">📂</div><h3>Sem matrículas</h3><p>Edite o proprietário para adicionar matrículas.</p></div>`; return; }
   let html = '';
   mats.forEach(mat => {
-    const matDocs = docs[mat]||[];
+    const matDocs = (owner.docs||{})[mat]||[];
     const docKeys = matDocs.map(d=>d.type);
     const pending = REQUIRED_DOCS.filter(rd=>!docKeys.includes(rd));
-    const pendingLabel = pending.length === 0
-      ? `<span class="all-done-pill">✅ Completo</span>`
-      : `<span class="pending-pill">⚠ ${pending.length} pendente${pending.length>1?'s':''}</span>`;
+    const pendingLabel = pending.length === 0 ? `<span class="all-done-pill">✅ Completo</span>` : `<span class="pending-pill">⚠ ${pending.length} pendente${pending.length>1?'s':''}</span>`;
+    const renovacoes = getRenovacoesArray(owner, mat);
+    const printData = (owner.propertyPrints||{})[mat];
+    const matFotos = (owner.fotos||{})[mat]||[];
+    const matRelatorios = (owner.relatorios||{})[mat]||[];
 
-    html += `
-      <div class="matricula-section" id="mat_${mat.replace(/\W/g,'_')}">
-        <div class="matricula-header" onclick="toggleMatricula('mat_${mat.replace(/\W/g,'_')}')">
-          <div class="matricula-title">
-            <span class="matricula-num">${mat}</span>
-            <span class="matricula-name">${owner.name}</span>
-            ${pendingLabel}
-          </div>
-          <span class="matricula-chevron">▾</span>
+    html += `<div class="matricula-section" id="mat_${mat.replace(/\W/g,'_')}">
+      <div class="matricula-header" onclick="toggleMatricula('mat_${mat.replace(/\W/g,'_')}')">
+        <div class="matricula-title"><span class="matricula-num">${mat}</span><span class="matricula-name">${owner.name}</span>${pendingLabel}</div>
+        <span class="matricula-chevron">▾</span>
+      </div>
+      <div class="matricula-body">
+        <div class="checklist-title">Checklist Documental</div>
+        <div class="checklist">
+          ${DOC_TYPES.filter(dt=>dt.required || docKeys.includes(dt.key) || dt.key === 'renovacao').map(dt=>{
+            if (dt.key === 'diverso') return '';
+            if (dt.key === 'renovacao') {
+              if (renovacoes.length === 0) return '';
+              return `<div class="check-item has-doc"><span class="check-icon">✅</span><span class="check-label">Renovações (${renovacoes.length})</span><button class="check-download" onclick="toggleRenovacaoSub('${owner.id}','${mat}')">👁 Ver</button></div>
+              <div class="renovacao-sublist" id="rensub_${mat.replace(/\W/g,'_')}" style="display:none">${renovacoes.map((r,ri)=>`<div class="check-item has-doc" style="margin-bottom:4px"><span class="check-icon">🔄</span><span class="check-label">${r.renewalNumber}° Renovação — ${new Date(r.renewalDate+'T00:00:00').toLocaleDateString('pt-BR')}</span><button class="check-download" onclick="viewRenovacao('${owner.id}','${mat}',${ri})">👁 Ver</button>${editMode?`<button class="check-download" style="color:var(--danger)" onclick="deleteRenovacao('${owner.id}','${mat}',${ri})">🗑</button>`:''}</div>`).join('')}</div>`;
+            }
+            const matDocsList = matDocs.filter(d=>d.type===dt.key);
+            const doc = matDocsList[0];
+            if (doc) {
+              const dateStr = doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—';
+              const sigDate = doc.signatureDate ? ` — Assinatura: ${new Date(doc.signatureDate).toLocaleDateString('pt-BR')}` : '';
+              return `<div class="check-item has-doc"><span class="check-icon">✅</span><span class="check-label">${doc.customName||dt.label} <span class="check-date">(${dateStr}${sigDate})</span></span>${editMode?'':`<button class="check-download" onclick="viewDoc('${owner.id}','${mat}','${dt.key}')">👁 Ver</button>`}</div>`;
+            } else {
+              return `<div class="check-item missing"><span class="check-icon">🔴</span><span class="check-label">${dt.label}</span></div>`;
+            }
+          }).join('')}
+          ${matDocs.filter(d=>d.type==='diverso').length > 0 ? `<div style="margin-top:10px"><div class="checklist-title">Documentos Diversos</div>${matDocs.filter(d=>d.type==='diverso').map(doc=>`<div class="check-item has-doc"><span class="check-icon">📁</span><span class="check-label">${doc.customName||'Documento Diverso'} <span class="check-date">(${doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—'})</span></span><button class="check-download" onclick="viewDoc('${owner.id}','${mat}','diverso','${doc.id||''}')">👁 Ver</button></div>`).join('')}</div>` : ''}
         </div>
-        <div class="matricula-body">
-          <div class="checklist-title">Checklist Documental</div>
-          <div class="checklist">
-            ${DOC_TYPES.filter(dt=>dt.required || docKeys.includes(dt.key)).map(dt=>{
-              const doc = matDocs.find(d=>d.type===dt.key);
-              if (doc) {
-                const dateStr = doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—';
-                return `<div class="check-item has-doc">
-                  <span class="check-icon">✅</span>
-                  <span class="check-label">${doc.customName||dt.label} <span class="check-date">(${dateStr})</span></span>
-                  ${editMode?'':`<button class="check-download" onclick="viewDoc('${owner.id}','${mat}','${dt.key}')">👁 Ver</button>`}
-                </div>`;
-              } else {
-                return `<div class="check-item missing">
-                  <span class="check-icon">🔴</span>
-                  <span class="check-label">${dt.label}</span>
-                </div>`;
-              }
+        ${printData ? `<div style="margin-top:14px"><div class="checklist-title">📍 Print da Propriedade</div><div style="border-radius:var(--radius-lg);overflow:hidden;border:1.5px solid var(--border);background:var(--white);box-shadow:var(--shadow-sm);margin-top:8px"><img src="${printData.dataUrl}" class="print-image-clickable" style="width:100%;display:block;max-height:300px;object-fit:cover" alt="Print da propriedade - ${mat}" onclick="viewPrintLarge('${owner.id}','${mat}')"><div style="padding:10px 16px;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>📷 ${mat} — ${printData.date}</span><div style="display:flex;gap:8px;align-items:center">${printData.googleMapsLink ? `<a href="${printData.googleMapsLink}" target="_blank" style="color:var(--accent-2);font-weight:600;text-decoration:none;font-size:12px">📍 Google Maps</a>` : ''}<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();downloadPrint('${owner.id}','${mat}')">⬇ Download</button></div></div></div></div>` : ''}
+        ${matFotos.length > 0 ? renderFotoBatches(owner.id, mat, matFotos, false) : ''}
+        ${matRelatorios.length > 0 ? `<div style="margin-top:14px"><div class="checklist-title">📋 Relatórios</div>${matRelatorios.map((r,ri)=>`<div class="shapes-file-item" style="margin-bottom:4px"><span class="shapes-file-icon">${r.category==='Vistoria'?'📋':'🪣'}</span><div><div class="shapes-file-name">${r.files.join(', ')}</div><div class="shapes-file-date">${r.date}</div></div><div class="shapes-file-actions"><button class="btn btn-outline btn-sm" onclick="viewRelatorioFile('${owner.id}','${mat}',${ri},0)">👁 Ver</button></div></div>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderFotoBatches(ownerId, mat, matFotos, editMode) {
+  let html = '';
+  matFotos.forEach((batch, batchIdx) => {
+    const icon = batch.category === 'Vistoria' ? '🏠' : '🪣';
+    html += `
+      <div class="foto-batch-collapsible">
+        <div class="foto-batch-header-toggle" onclick="toggleFotoBatch(this)">
+          <span>${icon} ${batch.category} — ${batch.date} (${(batch.renamedFiles||batch.files).length} fotos)</span>
+          <span class="toggle-icon">[+]</span>
+        </div>
+        <div class="foto-batch-body collapsed">
+          ${editMode ? `<div style="margin-bottom:8px"><button class="btn btn-danger btn-sm" onclick="deleteFotoBatch('${ownerId}','${mat}',${batchIdx})">🗑 Remover lote</button></div>` : ''}
+          <div class="foto-scroll-container">
+            ${(batch.renamedFiles||batch.files).map((fname, fi) => {
+              const key = `${ownerId}|${mat}|${batchIdx}|${fi}`;
+              return `
+              <div class="foto-thumbnail" onclick="event.stopPropagation(); viewFotoFile('${ownerId}','${mat}',${batchIdx},${fi})" title="${fname}">
+                <img src="" data-photo-key="${key}" alt="${fname}" style="width:100%;height:100%;object-fit:cover">
+                <div class="foto-index">${fi+1}</div>
+                <button class="foto-download-btn" onclick="event.stopPropagation(); downloadOriginalFoto('${ownerId}','${mat}',${batchIdx},${fi})" title="Baixar foto original">⬇</button>
+              </div>`;
             }).join('')}
-            ${matDocs.filter(d=>d.type==='diverso').length > 0 ? `
-              <div style="margin-top:10px">
-                <div class="checklist-title">Documentos Diversos</div>
-                ${matDocs.filter(d=>d.type==='diverso').map(doc=>{
-                  const dateStr = doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—';
-                  return `<div class="check-item has-doc">
-                    <span class="check-icon">📁</span>
-                    <span class="check-label">${doc.customName||'Documento Diverso'} <span class="check-date">(${dateStr})</span></span>
-                    <button class="check-download" onclick="viewDoc('${owner.id}','${mat}','diverso','${doc.id||''}')">👁 Ver</button>
-                  </div>`;
-                }).join('')}
-              </div>` : ''}
           </div>
         </div>
       </div>
     `;
   });
+  return html;
+}
 
-  // Fotos section
-  if (fotos.length > 0 || relatorios.length > 0) {
-    html += `<div style="margin-top:28px"><div class="section-label">Fotos e Relatórios</div>`;
-    if (fotos.length > 0) {
-      html += `<div class="shapes-cat-card" style="margin-bottom:12px">
-        <div class="shapes-cat-header"><span class="shapes-cat-icon">📷</span><span class="shapes-cat-title">Fotos</span></div>
-        <div class="shapes-cat-body">
-          <div class="shapes-file-list">
-            ${fotos.map(f=>`
-              <div class="shapes-file-item">
-                <span class="shapes-file-icon">${f.category==='Vistoria'?'🏠':'🪣'}</span>
-                <div><div class="shapes-file-name">${f.category} — ${f.files.join(', ')}</div><div class="shapes-file-date">${f.date}</div></div>
-                <div class="shapes-file-actions">
-                  <button class="btn btn-outline btn-sm" onclick="viewGenericDoc('${f.files[0]}')">👁 Ver</button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>`;
-    }
-    if (relatorios.length > 0) {
-      html += `<div class="shapes-cat-card">
-        <div class="shapes-cat-header"><span class="shapes-cat-icon">📋</span><span class="shapes-cat-title">Relatórios de Vistoria</span></div>
-        <div class="shapes-cat-body">
-          <div class="shapes-file-list">
-            ${relatorios.map(r=>`
-              <div class="shapes-file-item">
-                <span class="shapes-file-icon">${r.category==='Vistoria'?'📋':'🪣'}</span>
-                <div><div class="shapes-file-name">${r.category} — ${r.files.join(', ')}</div><div class="shapes-file-date">${r.date}</div></div>
-                <div class="shapes-file-actions">
-                  <button class="btn btn-outline btn-sm" onclick="viewGenericDoc('${r.files[0]}')">👁 Ver</button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>`;
-    }
-    html += '</div>';
-  }
-
-  container.innerHTML = html;
+function toggleRenovacaoSub(ownerId, mat) {
+  const sub = document.getElementById('rensub_' + mat.replace(/\W/g,'_'));
+  if (sub) sub.style.display = sub.style.display === 'none' ? 'block' : 'none';
 }
 
 function toggleMatricula(id) {
@@ -1892,15 +2607,9 @@ function toggleMatricula(id) {
 
 // ===== RENDER EDITAR LIST =====
 function renderEditarList() {
-  const container = document.getElementById('ownerListEditar');
-  const q = document.getElementById('searchEditar').value.toLowerCase();
-  let owners = state.owners;
-  if (q) owners = owners.filter(o => o.name.toLowerCase().includes(q));
-
-  if (!owners.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><h3>${q?'Nenhum resultado':'Nenhum proprietário cadastrado'}</h3><p>Clique em "Adicionar Proprietário" para começar.</p></div>`;
-    return;
-  }
+  const container = document.getElementById('ownerListEditar'), q = document.getElementById('searchEditar').value.toLowerCase();
+  let owners = state.owners; if (q) owners = owners.filter(o => o.name.toLowerCase().includes(q));
+  if (!owners.length) { container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><h3>${q?'Nenhum resultado':'Nenhum proprietário cadastrado'}</h3><p>Clique em "Adicionar Proprietário" para começar.</p></div>`; return; }
   container.innerHTML = `<div class="owner-grid">${owners.map(o=>ownerCardHTML(o,'editar')).join('')}</div>`;
 }
 
@@ -1916,140 +2625,100 @@ function openOwnerEditor(id) {
 
 function renderOwnerEditor(owner) {
   const container = document.getElementById('ownerEditorContent');
-  // Similar to detail but with edit actions
   const mats = owner.matriculas||[];
-  const docs = owner.docs||{};
-  const fotos = owner.fotos||[];
-  const relatorios = owner.relatorios||[];
-
-  let html = `<div style="margin-bottom:20px">
-    <div class="owner-detail-header">
-      <div class="owner-detail-avatar">${owner.name.charAt(0)}</div>
-      <div class="owner-detail-info">
-        <h2>${owner.name}</h2>
-        <div class="owner-detail-meta">
-          <span class="phase-badge phase-${owner.phase}">${owner.phase}</span>
-          <span class="meta-tag">📋 ${mats.length} matrícula${mats.length!==1?'s':''}</span>
-        </div>
-      </div>
-    </div>
-  </div>`;
-
-  if (mats.length === 0) {
-    html += `<div class="empty-state"><div class="empty-icon">📂</div><h3>Sem matrículas cadastradas</h3><p>Edite o proprietário para adicionar matrículas.</p></div>`;
-    container.innerHTML = html;
-    return;
-  }
-
+  const renewalLabel = (owner.phase === 'Adesão' && owner.renewalNumber > 0) ? ` — N° Renovação ${owner.renewalNumber}` : '';
+  let html = `<div style="margin-bottom:20px"><div class="owner-detail-header"><div class="owner-detail-avatar">${owner.name.charAt(0)}</div><div class="owner-detail-info"><h2>${owner.name}</h2><div class="owner-detail-meta"><span class="phase-badge phase-${owner.phase}">${owner.phase}${renewalLabel}</span><span class="meta-tag">📋 ${mats.length} matrícula${mats.length!==1?'s':''}</span></div></div></div></div>`;
+  if (mats.length === 0) { html += `<div class="empty-state"><div class="empty-icon">📂</div><h3>Sem matrículas cadastradas</h3><p>Edite o proprietário para adicionar matrículas.</p></div>`; container.innerHTML = html; return; }
   html += `<div class="section-label">Matrículas e Documentos</div>`;
-
   mats.forEach(mat => {
-    const matDocs = docs[mat]||[];
+    const matDocs = (owner.docs||{})[mat]||[];
     const docKeys = matDocs.map(d=>d.type);
     const pending = REQUIRED_DOCS.filter(rd=>!docKeys.includes(rd));
-    const pendingLabel = pending.length === 0
-      ? `<span class="all-done-pill">✅ Completo</span>`
-      : `<span class="pending-pill">⚠ ${pending.length} pendente${pending.length>1?'s':''}</span>`;
+    const pendingLabel = pending.length === 0 ? `<span class="all-done-pill">✅ Completo</span>` : `<span class="pending-pill">⚠ ${pending.length} pendente${pending.length>1?'s':''}</span>`;
+    const renovacoes = getRenovacoesArray(owner, mat);
+    const printData = (owner.propertyPrints||{})[mat];
+    const matFotos = (owner.fotos||{})[mat]||[];
+    const matRelatorios = (owner.relatorios||{})[mat]||[];
 
-    html += `
-      <div class="matricula-section open" id="emat_${mat.replace(/\W/g,'_')}">
-        <div class="matricula-header" onclick="toggleMatricula('emat_${mat.replace(/\W/g,'_')}')">
-          <div class="matricula-title">
-            <span class="matricula-num">${mat}</span>
-            <span class="matricula-name">${owner.name}</span>
-            ${pendingLabel}
-          </div>
-          <span class="matricula-chevron">▾</span>
+    html += `<div class="matricula-section open" id="emat_${mat.replace(/\W/g,'_')}">
+      <div class="matricula-header" onclick="toggleMatricula('emat_${mat.replace(/\W/g,'_')}')"><div class="matricula-title"><span class="matricula-num">${mat}</span><span class="matricula-name">${owner.name}</span>${pendingLabel}</div><span class="matricula-chevron">▾</span></div>
+      <div class="matricula-body">
+        <div class="checklist-title">Checklist Documental</div>
+        <div class="checklist">
+          ${DOC_TYPES.filter(dt=>dt.required || docKeys.includes(dt.key) || dt.key === 'renovacao').map(dt=>{
+            if (dt.key === 'diverso') return '';
+            if (dt.key === 'renovacao') {
+              return `<div class="check-item ${renovacoes.length>0?'has-doc':'missing'}"><span class="check-icon">${renovacoes.length>0?'✅':'🔴'}</span><span class="check-label">Renovações (${renovacoes.length})</span><button class="check-download" onclick="quickAddDoc('${owner.id}','${mat}','renovacao')">+ Adicionar</button>${renovacoes.length>0?`<button class="check-download" onclick="toggleRenovacaoSub('${owner.id}','${mat}')">👁 Ver</button>`:''}</div>
+              <div class="renovacao-sublist" id="rensub_${mat.replace(/\W/g,'_')}" style="display:none">${renovacoes.map((r,ri)=>`<div class="check-item has-doc"><span class="check-icon">🔄</span><span class="check-label">${r.renewalNumber}° Renovação — ${new Date(r.renewalDate+'T00:00:00').toLocaleDateString('pt-BR')}</span><button class="check-download" onclick="viewRenovacao('${owner.id}','${mat}',${ri})">👁 Ver</button><button class="check-download" style="color:var(--danger)" onclick="deleteRenovacao('${owner.id}','${mat}',${ri})">🗑</button></div>`).join('')}</div>`;
+            }
+            const matDocsList = matDocs.filter(d=>d.type===dt.key);
+            const doc = matDocsList[0];
+            if (doc) {
+              const dateStr = doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—';
+              const sigDate = doc.signatureDate ? ` — Assinatura: ${new Date(doc.signatureDate).toLocaleDateString('pt-BR')}` : '';
+              return `<div class="check-item has-doc"><span class="check-icon">✅</span><span class="check-label">${doc.customName||dt.label} <span class="check-date">(${dateStr}${sigDate})</span></span><button class="check-download" onclick="viewDoc('${owner.id}','${mat}','${dt.key}')">👁 Ver</button><button class="check-download" style="color:var(--danger)" onclick="deleteDoc('${owner.id}','${mat}','${dt.key}')">🗑</button></div>`;
+            } else {
+              return `<div class="check-item missing"><span class="check-icon">🔴</span><span class="check-label">${dt.label}</span><button class="check-download" onclick="quickAddDoc('${owner.id}','${mat}','${dt.key}')">+ Adicionar</button></div>`;
+            }
+          }).join('')}
         </div>
-        <div class="matricula-body">
-          <div class="checklist-title">Checklist Documental</div>
-          <div class="checklist">
-            ${DOC_TYPES.filter(dt=>dt.required || docKeys.includes(dt.key)).map(dt=>{
-              const matDocsList = matDocs.filter(d=>d.type===dt.key);
-              if (dt.key === 'diverso') return ''; // handled separately
-              const doc = matDocsList[0];
-              if (doc) {
-                const dateStr = doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—';
-                return `<div class="check-item has-doc">
-                  <span class="check-icon">✅</span>
-                  <span class="check-label">${doc.customName||dt.label} <span class="check-date">(${dateStr})</span></span>
-                  <button class="check-download" onclick="viewDoc('${owner.id}','${mat}','${dt.key}')">👁 Ver</button>
-                  <button class="check-download" style="color:var(--danger)" onclick="deleteDoc('${owner.id}','${mat}','${dt.key}')">🗑</button>
-                </div>`;
-              } else {
-                return `<div class="check-item missing">
-                  <span class="check-icon">🔴</span>
-                  <span class="check-label">${dt.label}</span>
-                  <button class="check-download" onclick="quickAddDoc('${owner.id}','${mat}','${dt.key}')">+ Adicionar</button>
-                </div>`;
-              }
-            }).join('')}
-          </div>
-          ${matDocs.filter(d=>d.type==='diverso').length > 0 ? `
-            <div style="margin-top:14px">
-              <div class="checklist-title">Documentos Diversos</div>
-              <div class="checklist">
-                ${matDocs.filter(d=>d.type==='diverso').map(doc=>{
-                  const dateStr = doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—';
-                  return `<div class="check-item has-doc">
-                    <span class="check-icon">📁</span>
-                    <span class="check-label">${doc.customName||'Documento Diverso'} <span class="check-date">(${dateStr})</span></span>
-                    <button class="check-download" onclick="viewDoc('${owner.id}','${mat}','diverso','${doc.id||''}')">👁 Ver</button>
-                    <button class="check-download" style="color:var(--danger)" onclick="deleteDocById('${owner.id}','${mat}','${doc.id||''}')">🗑</button>
-                  </div>`;
-                }).join('')}
-              </div>
-            </div>` : ''}
+        ${matDocs.filter(d=>d.type==='diverso').length > 0 ? `<div style="margin-top:14px"><div class="checklist-title">Documentos Diversos</div>${matDocs.filter(d=>d.type==='diverso').map(doc=>`<div class="check-item has-doc"><span class="check-icon">📁</span><span class="check-label">${doc.customName||'Documento Diverso'} <span class="check-date">(${doc.date ? new Date(doc.date).toLocaleDateString('pt-BR') : '—'})</span></span><button class="check-download" onclick="viewDoc('${owner.id}','${mat}','diverso','${doc.id||''}')">👁 Ver</button><button class="check-download" style="color:var(--danger)" onclick="deleteDocById('${owner.id}','${mat}','${doc.id||''}')">🗑</button></div>`).join('')}</div>` : ''}
+        ${printData ? `<div style="margin-top:14px"><div class="checklist-title">📍 Print da Propriedade</div><div style="border-radius:var(--radius-lg);overflow:hidden;border:1.5px solid var(--border);background:var(--white);box-shadow:var(--shadow-sm);margin-top:8px;position:relative"><div style="position:relative;cursor:pointer" onclick="viewPrintLarge('${owner.id}','${mat}')"><img src="${printData.dataUrl||''}" style="width:100%;display:block;max-height:300px;object-fit:cover" alt="Print da propriedade - ${mat}"><div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);color:#fff;border-radius:8px;padding:4px 10px;font-size:12px;pointer-events:none">🔍 Clique para ampliar</div></div><div style="padding:10px 16px;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>📷 ${mat} — ${printData.date}</span><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${printData.googleMapsLink ? `<a href="${printData.googleMapsLink}" target="_blank" style="color:var(--accent-2);font-weight:600;text-decoration:none;font-size:12px">📍 Google Maps</a>` : ''}<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEditPrintModal('${owner.id}','${mat}')">✏️ Editar</button><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();downloadPrint('${owner.id}','${mat}')">⬇ Download</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePrint('${owner.id}','${mat}')">🗑 Remover</button></div></div></div></div>` : ''}
+        ${matFotos.length > 0 ? renderFotoBatches(owner.id, mat, matFotos, true) : ''}
+        ${matRelatorios.length > 0 ? `<div style="margin-top:14px"><div class="checklist-title">📋 Relatórios</div>${matRelatorios.map((r,ri)=>`<div class="shapes-file-item" style="margin-bottom:4px"><span class="shapes-file-icon">${r.category==='Vistoria'?'📋':'🪣'}</span><div><div class="shapes-file-name">${r.files.join(', ')}</div><div class="shapes-file-date">${r.date}</div></div><div class="shapes-file-actions"><button class="btn btn-outline btn-sm" onclick="viewRelatorioFile('${owner.id}','${mat}',${ri},0)">👁 Ver</button><button class="btn btn-danger btn-sm" onclick="deleteRelatorioBatch('${owner.id}','${mat}',${ri})">🗑</button></div></div>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  const shapes = owner.shapes||[];
+  if (shapes.length > 0) {
+    html += `<div style="margin-top:20px"><div class="section-label">📐 Shapes</div>`;
+    html += renderShapeList(owner, true);
+    html += `</div>`;
+  }
+  container.innerHTML = html;
+}
+
+function renderShapeList(owner, editMode) {
+  const shapes = owner.shapes||[];
+  if (!shapes.length) return '';
+  const icons = { shape:'📐', kml:'🌍', pdf_mapa:'🗺️', foto_mapa:'🖼️' };
+  const grouped = {};
+  shapes.forEach((s, idx) => {
+    const mat = s.matricula || 'Sem Matrícula';
+    if (!grouped[mat]) grouped[mat] = [];
+    grouped[mat].push({...s, origIdx: idx});
+  });
+  let html = '';
+  for (const [matricula, shapeList] of Object.entries(grouped)) {
+    html += `<div class="shape-group-collapsible">
+      <div class="shape-group-header" onclick="toggleShapeGroup(this)">
+        <span>📁 Matrícula ${matricula} (${shapeList.length} shape${shapeList.length!==1?'s':''})</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); downloadAllShapesZip('${owner.id}','${matricula}')">⬇ Baixar ZIP</button>
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); viewAllShapesOnMap('${owner.id}','${matricula}')">🗺️ Mapa</button>
+          <span class="toggle-icon">[+]</span>
         </div>
       </div>
-    `;
-  });
-
-  // Fotos & Relatorios
-  if (fotos.length > 0 || relatorios.length > 0) {
-    html += `<div style="margin-top:28px"><div class="section-label">Fotos e Relatórios</div>`;
-    if (fotos.length > 0) {
-      html += `<div class="shapes-cat-card" style="margin-bottom:12px">
-        <div class="shapes-cat-header"><span class="shapes-cat-icon">📷</span><span class="shapes-cat-title">Fotos</span></div>
-        <div class="shapes-cat-body">
-          <div class="shapes-file-list">
-            ${fotos.map((f,fi)=>`
-              <div class="shapes-file-item">
-                <span class="shapes-file-icon">${f.category==='Vistoria'?'🏠':'🪣'}</span>
-                <div><div class="shapes-file-name">${f.category} — ${f.files.join(', ')}</div><div class="shapes-file-date">${f.date}</div></div>
-                <div class="shapes-file-actions">
-                  <button class="btn btn-outline btn-sm" onclick="viewGenericDoc('${f.files[0]}')">👁 Ver</button>
-                  <button class="btn btn-danger btn-sm" onclick="deleteFoto(${fi})">🗑</button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
+      <div class="shape-group-body collapsed">
+        <div class="shapes-file-list">`;
+    shapeList.forEach(s => {
+      const isGeoFile = s.type === 'kml' || s.type === 'shape';
+      html += `<div class="shapes-file-item">
+        <span class="shapes-file-icon">${icons[s.type]||'📄'}</span>
+        <div>
+          <div class="shapes-file-name">${s.fileName}</div>
+          <div class="shapes-file-date">${s.date}</div>
+        </div>
+        <div class="shapes-file-actions">
+          ${isGeoFile ? `<button class="btn btn-outline btn-sm" onclick="viewShapeOnMap('${owner.id}',${s.origIdx})">🗺️ Mapa</button>` : ''}
+          <button class="btn btn-outline btn-sm" onclick="downloadShape('${owner.id}',${s.origIdx})">⬇ Download</button>
+          ${editMode ? `<button class="btn btn-danger btn-sm" onclick="deleteShape('${owner.id}',${s.origIdx})">🗑</button>` : ''}
         </div>
       </div>`;
-    }
-    if (relatorios.length > 0) {
-      html += `<div class="shapes-cat-card">
-        <div class="shapes-cat-header"><span class="shapes-cat-icon">📋</span><span class="shapes-cat-title">Relatórios</span></div>
-        <div class="shapes-cat-body">
-          <div class="shapes-file-list">
-            ${relatorios.map((r,ri)=>`
-              <div class="shapes-file-item">
-                <span class="shapes-file-icon">${r.category==='Vistoria'?'📋':'🪣'}</span>
-                <div><div class="shapes-file-name">${r.category} — ${r.files.join(', ')}</div><div class="shapes-file-date">${r.date}</div></div>
-                <div class="shapes-file-actions">
-                  <button class="btn btn-outline btn-sm" onclick="viewGenericDoc('${r.files[0]}')">👁 Ver</button>
-                  <button class="btn btn-danger btn-sm" onclick="deleteRelatorio(${ri})">🗑</button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>`;
-    }
-    html += '</div>';
+    });
+    html += `</div></div></div>`;
   }
-
-  container.innerHTML = html;
+  return html;
 }
 
 // ===== ADD OWNER =====
@@ -2058,20 +2727,17 @@ let editingOwnerId = null;
 
 function selectPhase(phase) {
   selectedPhase = phase;
-  document.querySelectorAll('.radio-option').forEach(el => {
-    el.className = 'radio-option';
-  });
+  document.querySelectorAll('.radio-option').forEach(el => { el.className = 'radio-option'; });
   event.currentTarget.className = `radio-option selected-${phase}`;
+  document.getElementById('renewalNumberGroup').style.display = phase === 'Adesão' ? 'block' : 'none';
+  if (phase !== 'Adesão') document.getElementById('renewalNumberInput').value = '0';
 }
 
 function addMatricula() {
   const list = document.getElementById('matriculasList');
   const item = document.createElement('div');
   item.className = 'matricula-item';
-  item.innerHTML = `
-    <input type="text" class="form-input" placeholder="Número da matrícula">
-    <button class="btn-remove-mat" onclick="this.parentElement.remove()">×</button>
-  `;
+  item.innerHTML = `<input type="text" class="form-input" placeholder="Número da matrícula"><button class="btn-remove-mat" onclick="this.parentElement.remove()">×</button>`;
   list.appendChild(item);
 }
 
@@ -2081,17 +2747,14 @@ function openEditOwnerModal() {
   editingOwnerId = owner.id;
   document.getElementById('modalAddOwnerTitle').textContent = 'Editar Proprietário';
   document.getElementById('ownerNameInput').value = owner.name;
-  document.getElementById('matriculasList').innerHTML = (owner.matriculas||[]).map((m,i) => `
-    <div class="matricula-item">
-      <input type="text" class="form-input" value="${m}" placeholder="Número da matrícula">
-      ${i>0?`<button class="btn-remove-mat" onclick="this.parentElement.remove()">×</button>`:''}
-    </div>
-  `).join('');
+  document.getElementById('matriculasList').innerHTML = (owner.matriculas||[]).map((m,i) => `<div class="matricula-item"><input type="text" class="form-input" value="${m}" placeholder="Número da matrícula">${i>0?`<button class="btn-remove-mat" onclick="this.parentElement.remove()">×</button>`:''}</div>`).join('');
   selectedPhase = owner.phase;
   document.querySelectorAll('.radio-option').forEach(el => {
     const v = el.querySelector('input')?.value;
     el.className = v === owner.phase ? `radio-option selected-${owner.phase}` : 'radio-option';
   });
+  document.getElementById('renewalNumberInput').value = owner.renewalNumber || 0;
+  document.getElementById('renewalNumberGroup').style.display = owner.phase === 'Adesão' ? 'block' : 'none';
   openModal('modalAddOwner');
 }
 
@@ -2099,18 +2762,23 @@ function saveOwner() {
   const name = document.getElementById('ownerNameInput').value.trim();
   if (!name) { showToast('Informe o nome do proprietário', 'error'); return; }
   if (!selectedPhase) { showToast('Selecione uma fase', 'error'); return; }
-  const matriculas = Array.from(document.querySelectorAll('#matriculasList .form-input'))
-    .map(i=>i.value.trim()).filter(v=>v);
+  const matriculas = Array.from(document.querySelectorAll('#matriculasList .form-input')).map(i=>i.value.trim()).filter(v=>v);
   if (!matriculas.length) { showToast('Adicione pelo menos uma matrícula', 'error'); return; }
+  const renewalNumber = selectedPhase === 'Adesão' ? parseInt(document.getElementById('renewalNumberInput').value) || 0 : 0;
 
   if (editingOwnerId) {
     const idx = state.owners.findIndex(o=>o.id===editingOwnerId);
     if (idx>-1) {
       const prev = state.owners[idx];
-      // preserve docs for existing matriculas
-      const newDocs = {};
-      matriculas.forEach(m=>{ newDocs[m] = (prev.docs||{})[m]||[]; });
-      state.owners[idx] = {...prev, name, phase: selectedPhase, matriculas, docs: newDocs};
+      const newDocs = {}, newFotos = {}, newRelatorios = {}, newPropertyPrints = {...(prev.propertyPrints||{})}, newRenovacoes = {...(prev.renovacoes||{})};
+      matriculas.forEach(m=>{
+        newDocs[m] = (prev.docs||{})[m]||[];
+        newFotos[m] = (prev.fotos||{})[m]||[];
+        newRelatorios[m] = (prev.relatorios||{})[m]||[];
+        if (!newPropertyPrints[m]) newPropertyPrints[m] = null;
+        if (!newRenovacoes[m]) newRenovacoes[m] = [];
+      });
+      state.owners[idx] = {...prev, name, phase: selectedPhase, matriculas, docs: newDocs, fotos: newFotos, relatorios: newRelatorios, renewalNumber, propertyPrints: newPropertyPrints, renovacoes: newRenovacoes};
     }
     editingOwnerId = null;
     showToast('✅ Proprietário atualizado com sucesso!');
@@ -2122,9 +2790,11 @@ function saveOwner() {
   } else {
     const newOwner = {
       id: 'o_' + Date.now(),
-      name, phase: selectedPhase, matriculas,
+      name, phase: selectedPhase, matriculas, renewalNumber,
       docs: Object.fromEntries(matriculas.map(m=>[m,[]])),
-      fotos: [], relatorios: [], shapes: []
+      fotos: Object.fromEntries(matriculas.map(m=>[m,[]])),
+      relatorios: Object.fromEntries(matriculas.map(m=>[m,[]])),
+      shapes: [], propertyPrints: {}, renovacoes: {}
     };
     state.owners.push(newOwner);
     saveState();
@@ -2137,7 +2807,7 @@ function saveOwner() {
 function deleteCurrentOwner() {
   const owner = state.owners.find(o=>o.id===state.currentOwnerId);
   if (!owner) return;
-  if (!confirm(`Tem certeza que deseja excluir "${owner.name}"? Esta ação não pode ser desfeita.`)) return;
+  if (!confirm('Deseja mesmo apagar o proprietário "' + owner.name + '"? Esta ação não pode ser desfeita.')) return;
   state.owners = state.owners.filter(o=>o.id!==state.currentOwnerId);
   saveState();
   showToast('🗑️ Proprietário excluído');
@@ -2148,25 +2818,46 @@ function deleteCurrentOwner() {
 let selectedDocType = '';
 let tempFiles = {};
 
+function updateDocTypeColors() {
+  const mat = document.getElementById('docMatricula').value;
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner || !mat) {
+    document.querySelectorAll('.doc-type-option').forEach(el => {
+      el.classList.remove('required-missing','optional-missing','already-added');
+      const dt = DOC_TYPES.find(d=>d.key===el.dataset.key);
+      if (dt && !dt.required) el.classList.add('not-required');
+    });
+    return;
+  }
+  const matDocs = (owner.docs||{})[mat]||[], docKeys = matDocs.map(d=>d.type), renovacoes = getRenovacoesArray(owner, mat);
+  document.querySelectorAll('.doc-type-option').forEach(el => {
+    el.classList.remove('required-missing','optional-missing','already-added','not-required');
+    const key = el.dataset.key, dt = DOC_TYPES.find(d=>d.key===key);
+    if (!dt) return;
+    if (key === 'renovacao') {
+      if (renovacoes.length > 0) el.classList.add('already-added');
+      else el.classList.add('optional-missing');
+    } else if (docKeys.includes(key)) el.classList.add('already-added');
+    else if (dt.required) el.classList.add('required-missing');
+    else el.classList.add('optional-missing');
+  });
+}
+
 function openAddDocModal() {
   const owner = state.owners.find(o=>o.id===state.currentOwnerId);
   if (!owner) return;
   selectedDocType = '';
   tempFiles['docFileInput'] = [];
-
-  const matSel = document.getElementById('docMatricula');
-  matSel.innerHTML = `<option value="">Selecione...</option><option value="__all__">Todas as matrículas</option>` +
-    (owner.matriculas||[]).map(m=>`<option value="${m}">${m}</option>`).join('');
-
-  const grid = document.getElementById('docTypeGrid');
-  grid.innerHTML = DOC_TYPES.map(dt=>`
-    <div class="doc-type-option ${!dt.required?'not-required':''}" onclick="selectDocType('${dt.key}',this)" data-key="${dt.key}">
-      <span>${dt.icon}</span> ${dt.label}
-    </div>
-  `).join('');
-
+  tempFiles['procuracaoIdFileInput'] = [];
+  document.getElementById('docMatricula').innerHTML = '<option value="">Selecione...</option>' + owner.matriculas.map(m=>`<option value="${m}">${m}</option>`).join('');
+  document.getElementById('docTypeGrid').innerHTML = DOC_TYPES.map(dt=>`<div class="doc-type-option" onclick="selectDocType('${dt.key}',this)" data-key="${dt.key}"><span>${dt.icon}</span> ${dt.label}</div>`).join('');
   document.getElementById('docDiversoNameGroup').style.display = 'none';
+  document.getElementById('docProcuracaoIdGroup').style.display = 'none';
+  document.getElementById('docTermoAdesaoDateGroup').style.display = 'none';
+  document.getElementById('docRenovacaoGroup').style.display = 'none';
   document.getElementById('docFilesPreview').innerHTML = '';
+  document.getElementById('procuracaoIdFilesPreview').innerHTML = '';
+  updateDocTypeColors();
   openModal('modalAddDoc');
 }
 
@@ -2176,6 +2867,7 @@ function quickAddDoc(ownerId, mat, docKey) {
   setTimeout(()=>{
     document.getElementById('docMatricula').value = mat;
     selectDocType(docKey, document.querySelector(`[data-key="${docKey}"]`));
+    updateDocTypeColors();
   },100);
 }
 
@@ -2183,49 +2875,211 @@ function selectDocType(key, el) {
   selectedDocType = key;
   document.querySelectorAll('.doc-type-option').forEach(e=>e.classList.remove('selected'));
   if (el) el.classList.add('selected');
+  const dt = DOC_TYPES.find(d=>d.key===key);
   document.getElementById('docDiversoNameGroup').style.display = key === 'diverso' ? 'block' : 'none';
+  document.getElementById('docProcuracaoIdGroup').style.display = (dt && dt.needsIdDoc) ? 'block' : 'none';
+  document.getElementById('docTermoAdesaoDateGroup').style.display = (dt && dt.hasSignatureDate) ? 'block' : 'none';
+  document.getElementById('docRenovacaoGroup').style.display = (dt && dt.hasRenewalInfo) ? 'block' : 'none';
 }
 
-function saveDocument() {
+async function saveDocument() {
   const mat = document.getElementById('docMatricula').value;
   if (!mat) { showToast('Selecione a matrícula', 'error'); return; }
   if (!selectedDocType) { showToast('Selecione o tipo de documento', 'error'); return; }
+  const dt = DOC_TYPES.find(d=>d.key===selectedDocType);
+  if (dt && dt.needsIdDoc) {
+    if (!(tempFiles['procuracaoIdFileInput']||[]).length) { showToast('Anexe o documento de identidade do procurador (obrigatório para Procuração)', 'error'); return; }
+  }
   const files = tempFiles['docFileInput']||[];
   if (!files.length) { showToast('Selecione o arquivo', 'error'); return; }
-
   let customName = '';
   if (selectedDocType === 'diverso') {
     customName = document.getElementById('docDiversoName').value.trim();
     if (!customName) { showToast('Informe o nome do documento diverso', 'error'); return; }
   }
-
   const owner = state.owners.find(o=>o.id===state.currentOwnerId);
   if (!owner) return;
+  const file = files[0];
+  const ext = file.name.includes('.') ? file.name.split('.').pop() : '';
 
-  const docEntry = {
-    id: 'd_' + Date.now(),
-    type: selectedDocType,
-    fileName: files[0].name,
-    customName: customName || DOC_TYPES.find(d=>d.key===selectedDocType)?.label,
-    date: new Date().toISOString(),
-    oneDrive: state.oneDriveConnected,
-  };
+  if (dt && dt.key === 'renovacao') {
+    const renewalNumber = parseInt(document.getElementById('renovacaoNumber').value) || 1;
+    const renewalDate = document.getElementById('renovacaoDate').value;
+    if (!renewalDate) { showToast('Informe a data da renovação', 'error'); return; }
+    const localFileName = sanitizeFolderName(renewalNumber + '_Renovacao.' + ext);
+    const localPath = [sanitizeFolderName(owner.name), sanitizeFolderName(mat), 'Renovacoes', localFileName];
+    const renovacaoEntry = { id: 'ren_' + Date.now(), renewalNumber, renewalDate, fileName: localFileName, originalName: file.name, date: new Date().toISOString(), localPath };
+    getRenovacoesArray(owner, mat).push(renovacaoEntry);
+    if (_folderHandle) await saveFileToFolder(sanitizeFolderName(owner.name), [sanitizeFolderName(mat), 'Renovacoes'], file, localFileName);
+    saveState();
+    closeModal('modalAddDoc');
+    showToast(`✅ ${renewalNumber}° Renovação adicionada!`);
+    renderOwnerEditor(owner);
+    return;
+  }
 
-  const mats = mat === '__all__' ? owner.matriculas : [mat];
-  mats.forEach(m => {
-    if (!owner.docs) owner.docs = {};
-    if (!owner.docs[m]) owner.docs[m] = [];
-    // Remove existing of same type (except diverso)
-    if (selectedDocType !== 'diverso') {
-      owner.docs[m] = owner.docs[m].filter(d=>d.type!==selectedDocType);
-    }
-    owner.docs[m].push({...docEntry, id: 'd_'+Date.now()+Math.random()});
-  });
+  const localFileName = (selectedDocType === 'diverso' ? sanitizeFolderName(customName) : selectedDocType) + '.' + ext;
+  const localPath = [sanitizeFolderName(owner.name), sanitizeFolderName(mat), localFileName];
+  const docEntry = { id: 'd_' + Date.now(), type: selectedDocType, fileName: localFileName, originalName: file.name, customName: customName || dt?.label, date: new Date().toISOString(), oneDrive: state.oneDriveConnected, localPath };
+
+  if (dt && dt.hasSignatureDate) {
+    docEntry.signatureDate = document.getElementById('termoAdesaoDate').value;
+    if (!docEntry.signatureDate) { showToast('Informe a data da assinatura', 'error'); return; }
+  }
+  if (dt && dt.needsIdDoc) {
+    const idFile = tempFiles['procuracaoIdFileInput'][0];
+    docEntry.procuradorIdFileName = idFile.name;
+    docEntry.procuradorIdLocalPath = [sanitizeFolderName(owner.name), sanitizeFolderName(mat), sanitizeFolderName('id_procurador_' + idFile.name)];
+    if (_folderHandle) await saveFileToFolder(sanitizeFolderName(owner.name), [sanitizeFolderName(mat)], idFile, sanitizeFolderName('id_procurador_' + idFile.name));
+  }
+
+  if (!owner.docs) owner.docs = {};
+  if (!owner.docs[mat]) owner.docs[mat] = [];
+  if (selectedDocType !== 'diverso') owner.docs[mat] = owner.docs[mat].filter(d=>d.type!==selectedDocType);
+  owner.docs[mat].push(docEntry);
+
+  if (_folderHandle) await saveFileToFolder(sanitizeFolderName(owner.name), [sanitizeFolderName(mat)], file, localFileName);
 
   saveState();
   closeModal('modalAddDoc');
-  showToast(`✅ Documento "${docEntry.customName}" adicionado!`);
+  showToast(`✅ Documento "${customName || dt?.label}" adicionado!`);
   renderOwnerEditor(owner);
+}
+
+// ===== RENOVACAO SPECIFICS =====
+async function viewRenovacao(ownerId, mat, idx) {
+  const owner = state.owners.find(o=>o.id===ownerId);
+  const ren = getRenovacoesArray(owner, mat)[idx];
+  if (!ren) return;
+  let file = null;
+  if (ren.localPath && _folderHandle) file = await readFileFromPath(ren.localPath);
+  openFileViewer(ren.renewalNumber + '° Renovação - ' + mat, ren.fileName, file);
+}
+
+async function deleteRenovacao(ownerId, mat, idx) {
+  if (!confirm('Deseja mesmo apagar esta renovação? O arquivo também será removido da pasta local.')) return;
+  const owner = state.owners.find(o=>o.id===ownerId);
+  const renovacoes = getRenovacoesArray(owner, mat);
+  const ren = renovacoes[idx];
+  if (ren?.localPath && _folderHandle) await deleteFileFromPath(ren.localPath);
+  renovacoes.splice(idx, 1);
+  saveState();
+  showToast('🗑️ Renovação removida');
+  renderOwnerEditor(owner);
+}
+
+// ===== PRINT DA PROPRIEDADE =====
+function openAddPrintModal() {
+  if (!state.currentOwnerId) { showToast('Nenhum proprietário selecionado.', 'error'); return; }
+  const owner = state.owners.find(o => o.id === state.currentOwnerId);
+  if (!owner) return;
+  tempFiles['printFileInput'] = [];
+  document.getElementById('printMatricula').innerHTML = '<option value="">Selecione...</option>' + owner.matriculas.map(m => `<option value="${m}">${m}</option>`).join('');
+  document.getElementById('printGoogleMapsLink').value = '';
+  document.getElementById('printFilesPreview').innerHTML = '';
+  document.getElementById('printCurrentImgGroup').style.display = 'none';
+  document.getElementById('modalAddPrintTitle').innerText = 'Print da Propriedade';
+  document.getElementById('printImgLabel').innerHTML = 'Imagem (Print) <span class="required">*</span>';
+  openModal('modalAddPrint');
+}
+
+async function savePrint() {
+  if (!state.currentOwnerId) { showToast('Nenhum proprietário em edição.', 'error'); return; }
+  const mat = document.getElementById('printMatricula').value;
+  if (!mat) { showToast('Selecione a matrícula', 'error'); return; }
+  const owner = state.owners.find(o => o.id === state.currentOwnerId);
+  if (!owner) return;
+  const googleMapsLink = document.getElementById('printGoogleMapsLink').value.trim();
+  const newFiles = tempFiles['printFileInput'] || [];
+  let dataUrl, fileName, ext;
+  if (newFiles.length > 0) {
+    const file = newFiles[0];
+    try {
+      dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      fileName = file.name;
+      ext = fileName.includes('.') ? fileName.split('.').pop() : 'png';
+    } catch (err) { showToast('Erro ao processar imagem', 'error'); return; }
+  } else {
+    const existing = (owner.propertyPrints||{})[mat];
+    if (!existing) { showToast('Nenhuma imagem atual e nenhum arquivo selecionado.', 'error'); return; }
+    dataUrl = existing.dataUrl;
+    fileName = existing.fileName;
+    ext = fileName.includes('.') ? fileName.split('.').pop() : 'png';
+  }
+  if (!owner.propertyPrints) owner.propertyPrints = {};
+  owner.propertyPrints[mat] = { dataUrl, fileName, date: new Date().toLocaleDateString('pt-BR'), googleMapsLink, localPath: [sanitizeFolderName(owner.name), sanitizeFolderName(mat), sanitizeFolderName(mat + '_print.' + ext)] };
+  if (_folderHandle && newFiles.length > 0) await saveFileToFolder(sanitizeFolderName(owner.name), [sanitizeFolderName(mat)], newFiles[0], sanitizeFolderName(mat + '_print.' + ext));
+  saveState();
+  closeModal('modalAddPrint');
+  showToast('✅ Print da propriedade salvo!');
+  renderOwnerEditor(owner);
+}
+
+function openEditPrintModal(ownerId, mat) {
+  const owner = state.owners.find(o => o.id === ownerId);
+  if (!owner || !owner.propertyPrints[mat]) return;
+  const printData = owner.propertyPrints[mat];
+  document.getElementById('modalAddPrintTitle').innerText = 'Editar Print da Propriedade';
+  document.getElementById('printMatricula').innerHTML = owner.matriculas.map(m => `<option value="${m}">${m}</option>`).join('');
+  document.getElementById('printMatricula').value = mat;
+  document.getElementById('printGoogleMapsLink').value = printData.googleMapsLink || '';
+  document.getElementById('printCurrentImgGroup').style.display = 'block';
+  document.getElementById('printCurrentImg').src = printData.dataUrl || '';
+  document.getElementById('printImgLabel').innerHTML = 'Nova imagem (deixe vazio para manter a atual)';
+  tempFiles['printFileInput'] = [];
+  document.getElementById('printFilesPreview').innerHTML = '';
+  openModal('modalAddPrint');
+}
+
+function downloadPrint(ownerId, mat) {
+  const owner = state.owners.find(o => o.id === ownerId);
+  if (!owner || !owner.propertyPrints[mat]) return;
+  const printData = owner.propertyPrints[mat];
+  const ext = (printData.fileName || 'print.png').split('.').pop();
+  const a = document.createElement('a');
+  a.href = printData.dataUrl;
+  a.download = mat + '_print.' + ext;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('⬇ Download do print iniciado!', 'info');
+}
+
+async function deletePrint(ownerId, mat) {
+  if (!confirm('Deseja mesmo remover o print da propriedade?')) return;
+  const owner = state.owners.find(o => o.id === ownerId);
+  if (!owner || !owner.propertyPrints[mat]) return;
+  const printData = owner.propertyPrints[mat];
+  if (_folderHandle && printData.localPath) await deleteFileFromPath(printData.localPath);
+  delete owner.propertyPrints[mat];
+  saveState();
+  showToast('🗑️ Print removido');
+  renderOwnerEditor(owner);
+}
+
+function viewPrintLarge(ownerId, mat) {
+  const owner = state.owners.find(o => o.id === ownerId);
+  if (!owner || !owner.propertyPrints[mat]) return;
+  const printData = owner.propertyPrints[mat];
+  const overlay = document.createElement('div');
+  overlay.className = 'lightbox-overlay';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+  const closeBtn = document.createElement('span');
+  closeBtn.className = 'lightbox-close';
+  closeBtn.innerHTML = '✕';
+  closeBtn.onclick = () => overlay.remove();
+  const img = document.createElement('img');
+  img.src = printData.dataUrl;
+  img.alt = 'Print da Propriedade - ' + mat;
+  img.onclick = (e) => e.stopPropagation();
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(img);
+  document.body.appendChild(overlay);
 }
 
 // ===== FOTOS =====
@@ -2244,88 +3098,219 @@ function selectRelatorioCategory(cat) {
 }
 
 function openAddFotoModal() {
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner) return;
   selectedFotoCategory = '';
   tempFiles['fotoFileInput'] = [];
   document.getElementById('catFossa').classList.remove('selected');
   document.getElementById('catVistoria').classList.remove('selected');
   document.getElementById('fotoData').value = new Date().toISOString().split('T')[0];
   document.getElementById('fotoFilesPreview').innerHTML = '';
+  document.getElementById('fotoMatricula').innerHTML = '<option value="">Selecione...</option>' + owner.matriculas.map(m=>`<option value="${m}">${m}</option>`).join('');
   openModal('modalAddFoto');
 }
+
+function handleFotoFileChange(event) {
+  const files = Array.from(event.target.files);
+  const allowedExtensions = ['png','jpeg','jpg'];
+  const validFiles = [], rejectedFiles = [];
+  files.forEach(f => {
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (allowedExtensions.includes(ext)) validFiles.push(f);
+    else rejectedFiles.push(f.name);
+  });
+  if (!tempFiles['fotoFileInput']) tempFiles['fotoFileInput'] = [];
+  tempFiles['fotoFileInput'] = [...tempFiles['fotoFileInput'], ...validFiles];
+  renderFilesPreview('fotoFilesPreview', 'fotoFileInput');
+  if (rejectedFiles.length > 0) showToast(`Os seguintes arquivos não são imagens e foram ignorados: ${rejectedFiles.join(', ')}`, 'error');
+}
+
 function openAddRelatorioModal() {
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner) return;
   selectedRelatorioCategory = '';
   tempFiles['relatorioFileInput'] = [];
   document.getElementById('catRelFossa').classList.remove('selected');
   document.getElementById('catRelVistoria').classList.remove('selected');
   document.getElementById('relatorioData').value = new Date().toISOString().split('T')[0];
   document.getElementById('relatorioFilesPreview').innerHTML = '';
+  document.getElementById('relatorioMatricula').innerHTML = '<option value="">Selecione...</option>' + owner.matriculas.map(m=>`<option value="${m}">${m}</option>`).join('');
   openModal('modalAddRelatorio');
 }
 
-function saveFotos() {
+function generateThumbnail(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 100;
+        let width = img.width, height = img.height;
+        if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } }
+        else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function saveFotos() {
+  const mat = document.getElementById('fotoMatricula').value;
+  if (!mat) { showToast('Selecione a matrícula', 'error'); return; }
   if (!selectedFotoCategory) { showToast('Selecione a categoria', 'error'); return; }
   const data = document.getElementById('fotoData').value;
   if (!data) { showToast('Informe a data', 'error'); return; }
   const files = tempFiles['fotoFileInput']||[];
   if (!files.length) { showToast('Selecione pelo menos uma foto', 'error'); return; }
-
   const owner = state.owners.find(o=>o.id===state.currentOwnerId);
   if (!owner) return;
-  if (!owner.fotos) owner.fotos = [];
-  owner.fotos.push({ category: selectedFotoCategory, date: data, files: files.map(f=>f.name) });
-  saveState();
-  closeModal('modalAddFoto');
-  showToast(`✅ ${files.length} foto${files.length>1?'s':''} adicionada${files.length>1?'s':''}!`);
-  renderOwnerEditor(owner);
+  if (!owner.fotos) owner.fotos = {};
+  if (!owner.fotos[mat]) owner.fotos[mat] = [];
+  let nextIdx = 1;
+  owner.fotos[mat].forEach(batch => { nextIdx += (batch.renamedFiles||batch.files).length; });
+  const renamedFiles = files.map((f,i) => { const ext = f.name.split('.').pop(); return `Foto_${nextIdx + i}.${ext}`; });
+  const catFolder = sanitizeFolderName(selectedFotoCategory);
+  const localPaths = renamedFiles.map((n,i) => [sanitizeFolderName(owner.name), sanitizeFolderName(mat), 'Fotos', catFolder, n]);
+
+  showLoading();
+  try {
+    if (_folderHandle) {
+      for (let i=0;i<files.length;i++) {
+        await saveFileToFolder(sanitizeFolderName(owner.name), [sanitizeFolderName(mat), 'Fotos', catFolder], files[i], renamedFiles[i]);
+      }
+    }
+    owner.fotos[mat].push({ category: selectedFotoCategory, date: data, files: files.map(f=>f.name), renamedFiles, localPaths });
+    saveState();
+    closeModal('modalAddFoto');
+    showToast(`✅ ${files.length} foto(s) adicionada(s)!`);
+    renderOwnerEditor(owner);
+  } catch(e) {
+    showToast('Erro ao salvar fotos', 'error');
+  } finally {
+    hideLoading();
+  }
 }
-function saveRelatorio() {
+
+async function downloadOriginalFoto(ownerId, mat, batchIdx, fileIdx) {
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner?.fotos?.[mat]) return;
+  const batch = owner.fotos[mat][batchIdx];
+  if (!batch) return;
+  const localPath = batch.localPaths?.[fileIdx];
+  const fileName = (batch.renamedFiles||batch.files)[fileIdx];
+  if (localPath && _folderHandle) {
+    const file = await readFileFromPath(localPath);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName || 'foto';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`⬇ Download de "${fileName}" iniciado!`, 'info');
+    } else {
+      showToast('Arquivo não encontrado na pasta.', 'error');
+    }
+  } else {
+    showToast('Pasta não conectada.', 'error');
+  }
+}
+
+async function saveRelatorio() {
+  const mat = document.getElementById('relatorioMatricula').value;
+  if (!mat) { showToast('Selecione a matrícula', 'error'); return; }
   if (!selectedRelatorioCategory) { showToast('Selecione a categoria', 'error'); return; }
   const data = document.getElementById('relatorioData').value;
   if (!data) { showToast('Informe a data', 'error'); return; }
   const files = tempFiles['relatorioFileInput']||[];
   if (!files.length) { showToast('Selecione pelo menos um arquivo', 'error'); return; }
-
   const owner = state.owners.find(o=>o.id===state.currentOwnerId);
   if (!owner) return;
-  if (!owner.relatorios) owner.relatorios = [];
-  owner.relatorios.push({ category: selectedRelatorioCategory, date: data, files: files.map(f=>f.name) });
+  if (!owner.relatorios) owner.relatorios = {};
+  if (!owner.relatorios[mat]) owner.relatorios[mat] = [];
+
+  const [ano, mes, dia] = data.split('-');
+  const dataFormatada = `${dia}-${mes}-${ano}`;
+  const catFolder = sanitizeFolderName(selectedRelatorioCategory);
+
+  const renamedFiles = [];
+  const localPaths = [];
+
+  for (const file of files) {
+    const ext = file.name.split('.').pop();
+    const newName = sanitizeFolderName(`${selectedRelatorioCategory} - Relatório ${dataFormatada}.${ext}`);
+    renamedFiles.push(newName);
+    localPaths.push([sanitizeFolderName(owner.name), sanitizeFolderName(mat), 'Relatorios', catFolder, newName]);
+  }
+
+  owner.relatorios[mat].push({ category: selectedRelatorioCategory, date: data, files: renamedFiles, originalNames: files.map(f=>f.name), localPaths });
+
+  if (_folderHandle) {
+    for (let i=0;i<files.length;i++) {
+      await saveFileToFolder(sanitizeFolderName(owner.name), [sanitizeFolderName(mat), 'Relatorios', catFolder], files[i], renamedFiles[i]);
+    }
+  }
   saveState();
   closeModal('modalAddRelatorio');
-  showToast(`✅ Relatório adicionado!`);
+  showToast('✅ Relatório adicionado!');
   renderOwnerEditor(owner);
 }
 
-function deleteFoto(idx) {
-  if (!confirm('Excluir esta entrada de fotos?')) return;
-  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
-  owner.fotos.splice(idx,1);
+function deleteFotoBatch(ownerId, mat, batchIdx) {
+  if (!confirm('Remover este lote de fotos? Os arquivos também serão apagados da pasta.')) return;
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner?.fotos?.[mat]) return;
+  const batch = owner.fotos[mat][batchIdx];
+  if (batch?.localPaths && _folderHandle) batch.localPaths.forEach(p => deleteFileFromPath(p));
+  owner.fotos[mat].splice(batchIdx, 1);
+  if (owner.fotos[mat].length === 0) delete owner.fotos[mat];
   saveState();
   renderOwnerEditor(owner);
-  showToast('🗑️ Fotos removidas');
+  showToast('🗑️ Lote de fotos removido');
 }
-function deleteRelatorio(idx) {
-  if (!confirm('Excluir este relatório?')) return;
-  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
-  owner.relatorios.splice(idx,1);
+
+function deleteRelatorioBatch(ownerId, mat, idx) {
+  if (!confirm('Remover este relatório? O arquivo também será apagado da pasta.')) return;
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner?.relatorios?.[mat]) return;
+  const rel = owner.relatorios[mat][idx];
+  if (rel?.localPaths && _folderHandle) rel.localPaths.forEach(p => deleteFileFromPath(p));
+  owner.relatorios[mat].splice(idx, 1);
+  if (owner.relatorios[mat].length === 0) delete owner.relatorios[mat];
   saveState();
   renderOwnerEditor(owner);
   showToast('🗑️ Relatório removido');
 }
 
 // ===== DELETE DOC =====
-function deleteDoc(ownerId, mat, docType) {
-  if (!confirm('Excluir este documento?')) return;
+async function deleteDoc(ownerId, mat, docType) {
+  if (!confirm('Deseja mesmo apagar este documento? O arquivo também será removido da pasta local.')) return;
   const owner = state.owners.find(o=>o.id===ownerId);
   if (!owner?.docs?.[mat]) return;
+  const docsToDelete = owner.docs[mat].filter(d=>d.type===docType);
+  for (const doc of docsToDelete) {
+    if (doc.localPath && _folderHandle) await deleteFileFromPath(doc.localPath);
+    if (doc.procuradorIdLocalPath && _folderHandle) await deleteFileFromPath(doc.procuradorIdLocalPath);
+  }
   owner.docs[mat] = owner.docs[mat].filter(d=>d.type!==docType);
   saveState();
   showToast('🗑️ Documento removido');
   renderOwnerEditor(owner);
 }
-function deleteDocById(ownerId, mat, docId) {
-  if (!confirm('Excluir este documento?')) return;
+async function deleteDocById(ownerId, mat, docId) {
+  if (!confirm('Deseja mesmo apagar este documento? O arquivo também será removido da pasta local.')) return;
   const owner = state.owners.find(o=>o.id===ownerId);
   if (!owner?.docs?.[mat]) return;
+  const docToDelete = owner.docs[mat].find(d=>d.id===docId);
+  if (docToDelete?.localPath && _folderHandle) await deleteFileFromPath(docToDelete.localPath);
+  if (docToDelete?.procuradorIdLocalPath && _folderHandle) await deleteFileFromPath(docToDelete.procuradorIdLocalPath);
   owner.docs[mat] = owner.docs[mat].filter(d=>d.id!==docId);
   saveState();
   showToast('🗑️ Documento removido');
@@ -2333,221 +3318,453 @@ function deleteDocById(ownerId, mat, docId) {
 }
 
 // ===== VIEWER =====
-function viewDoc(ownerId, mat, docType, docId) {
+async function viewDoc(ownerId, mat, docType, docId) {
   const owner = state.owners.find(o=>o.id===ownerId);
   if (!owner?.docs?.[mat]) return;
-  const doc = docId
-    ? owner.docs[mat].find(d=>d.id===docId)
-    : owner.docs[mat].find(d=>d.type===docType);
+  const doc = docId ? owner.docs[mat].find(d=>d.id===docId) : owner.docs[mat].find(d=>d.type===docType);
   if (!doc) return;
-  openFileViewer(doc.customName||doc.fileName, doc.fileName, doc.oneDrive);
+  let file = null;
+  if (doc.localPath && _folderHandle) file = await readFileFromPath(doc.localPath);
+  await openFileViewer(doc.customName||doc.fileName, doc.fileName, file);
 }
-function viewGenericDoc(fileName) {
-  openFileViewer(fileName, fileName, false);
+
+async function viewFotoFile(ownerId, mat, batchIdx, fileIdx) {
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner?.fotos?.[mat]) return;
+  const batch = owner.fotos[mat][batchIdx];
+  if (!batch) return;
+  const localPath = batch.localPaths?.[fileIdx];
+  let file = null;
+  if (localPath && _folderHandle) file = await readFileFromPath(localPath);
+  const fileName = (batch.renamedFiles||batch.files)[fileIdx];
+  await openFileViewer('Foto - ' + mat, fileName, file);
 }
-function openFileViewer(title, fileName, onOneDrive) {
+
+async function viewRelatorioFile(ownerId, mat, relIdx, fileIdx) {
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner?.relatorios?.[mat]) return;
+  const rel = owner.relatorios[mat][relIdx];
+  if (!rel) return;
+  const localPath = rel.localPaths?.[fileIdx];
+  let file = null;
+  if (localPath && _folderHandle) file = await readFileFromPath(localPath);
+  await openFileViewer(rel.category + ' — ' + rel.date, rel.files[fileIdx]||rel.files[0], file);
+}
+
+let _currentViewerObjectURL = null;
+
+async function openFileViewer(title, fileName, fileOrBlob) {
+  if (_currentViewerObjectURL) { URL.revokeObjectURL(_currentViewerObjectURL); _currentViewerObjectURL = null; }
   document.getElementById('viewerFileName').textContent = title || fileName;
   const frame = document.getElementById('viewerFrame');
   const ext = (fileName||'').split('.').pop().toLowerCase();
-  let icon = '📄';
-  if (['jpg','jpeg','png','gif','webp'].includes(ext)) icon = '🖼️';
-  else if (ext==='pdf') icon = '📑';
-  else if (['kml','shp'].includes(ext)) icon = '🌍';
-  frame.innerHTML = `
-    <div class="file-icon-big">${icon}</div>
-    <strong style="font-family:var(--font-heading);color:var(--primary)">${fileName||'Arquivo'}</strong>
-    <p>${onOneDrive ? '☁️ Arquivo armazenado no OneDrive. Clique em Download para abrir.' : 'Prévia não disponível — use o botão Download para abrir o arquivo.'}</p>
-    ${onOneDrive ? '<div class="od-file-label" style="font-size:13px;margin-top:8px">☁️ OneDrive conectado</div>' : ''}
-  `;
-  document.getElementById('viewerDownloadBtn').onclick = ()=>{ showToast(`⬇ Iniciando download de "${fileName}"...`, 'info'); };
+  const isImage = ['jpg','jpeg','png','gif','webp'].includes(ext);
+  const isPdf = ext === 'pdf';
+  const isRealFile = fileOrBlob && (fileOrBlob instanceof Blob || fileOrBlob instanceof File);
+
+  if (isRealFile) {
+    const url = URL.createObjectURL(fileOrBlob);
+    _currentViewerObjectURL = url;
+    if (isImage) {
+      frame.style.cssText = 'width:100%;border-radius:10px;padding:0;background:transparent;min-height:auto;display:block';
+      frame.innerHTML = `<img src="${url}" style="width:100%;max-height:70vh;object-fit:contain;border-radius:8px;display:block;cursor:pointer" alt="${title||fileName}" onclick="viewImageLightbox('${url}')">`;
+    } else if (isPdf) {
+      frame.style.cssText = 'width:100%;border-radius:10px;padding:0;min-height:auto';
+      frame.innerHTML = `<iframe src="${url}#toolbar=1" style="width:100%;height:65vh;border:none;border-radius:10px;display:block" title="${title||fileName}"></iframe>`;
+    } else {
+      frame.style.cssText = '';
+      let icon = '📄';
+      if (['kml','shp'].includes(ext)) icon = '🌍'; else if (['doc','docx'].includes(ext)) icon = '📝'; else if (['xlsx','xls'].includes(ext)) icon = '📊';
+      frame.innerHTML = `<div class="file-icon-big">${icon}</div><strong style="font-family:var(--font-heading);color:var(--primary)">${fileName||'Arquivo'}</strong><p style="margin-top:8px">Prévia não disponível para este formato. Use o botão Download para abrir.</p>`;
+    }
+    document.getElementById('viewerDownloadBtn').onclick = () => {
+      const a = document.createElement('a'); a.href = url; a.download = fileName || title || 'arquivo'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      showToast(`⬇ Download de "${fileName}" iniciado!`, 'info');
+    };
+  } else {
+    frame.style.cssText = '';
+    let icon = '📄'; if (isImage) icon = '🖼️'; else if (isPdf) icon = '📑'; else if (['kml','shp'].includes(ext)) icon = '🌍';
+    const msg = !_folderHandle ? 'Conecte uma pasta local para visualizar arquivos.' : 'Arquivo não encontrado na pasta local.';
+    frame.innerHTML = `<div class="file-icon-big">${icon}</div><strong style="font-family:var(--font-heading);color:var(--primary)">${fileName||'Arquivo'}</strong><p style="margin-top:8px">${msg}</p>`;
+    document.getElementById('viewerDownloadBtn').onclick = () => showToast('Arquivo não disponível para download.', 'error');
+  }
   openModal('modalFileViewer');
+}
+
+function viewImageLightbox(url) {
+  const overlay = document.createElement('div'); overlay.className = 'lightbox-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  const closeBtn = document.createElement('span'); closeBtn.className = 'lightbox-close'; closeBtn.innerHTML = '✕'; closeBtn.onclick = () => overlay.remove();
+  const img = document.createElement('img'); img.src = url; img.alt = 'Imagem ampliada'; img.onclick = e => e.stopPropagation();
+  overlay.appendChild(closeBtn); overlay.appendChild(img); document.body.appendChild(overlay);
+}
+
+// ===== CALENDARIO =====
+function switchCalTab(tab) {
+  state.calTab = tab;
+  document.querySelectorAll('#calTabBar .tab-btn').forEach(b => b.classList.remove('active'));
+  if (tab === 'futuros') document.querySelector('#calTabBar .tab-btn:first-child').classList.add('active');
+  else document.querySelector('#calTabBar .tab-btn:last-child').classList.add('active');
+  renderCalendario();
+}
+
+function renderCalendario() {
+  const container = document.getElementById('calendarioContent');
+  const events = [];
+  state.owners.forEach(owner => {
+    const mats = owner.matriculas||[], docs = owner.docs||{};
+    mats.forEach(mat => {
+      const matDocs = docs[mat]||[];
+      matDocs.forEach(doc => {
+        if (doc.type === 'termo_adesao' && doc.signatureDate) {
+          const sigDate = new Date(doc.signatureDate + 'T00:00:00'), payDate = new Date(sigDate); payDate.setFullYear(payDate.getFullYear() + 1);
+          events.push({ date: payDate, ownerName: owner.name, matriculas: [mat], type: 'pagamento', label: 'Pagamento', ownerId: owner.id });
+        }
+      });
+      const renovacoes = getRenovacoesArray(owner, mat);
+      renovacoes.forEach(ren => {
+        if (ren.renewalDate) {
+          const renDate = new Date(ren.renewalDate + 'T00:00:00'), nextDate = new Date(renDate); nextDate.setFullYear(nextDate.getFullYear() + 1);
+          events.push({ date: nextDate, ownerName: owner.name, matriculas: [mat], type: 'pagamento', label: `Pagamento (Ren. ${ren.renewalNumber}°)`, ownerId: owner.id });
+        }
+      });
+    });
+  });
+  const now = new Date();
+  const futuros = events.filter(e => e.date >= now).sort((a,b) => a.date - b.date);
+  const historico = events.filter(e => e.date < now).sort((a,b) => b.date - a.date);
+  const showEvents = state.calTab === 'futuros' ? futuros : historico;
+  if (!showEvents.length) {
+    container.innerHTML = `<div class="empty-calendar"><div class="empty-calendar-icon">📅</div><h3 style="font-family:var(--font-heading);font-size:20px;color:var(--mid)">Nenhum evento ${state.calTab==='futuros'?'futuro':'no histórico'}</h3><p style="color:var(--muted);margin-top:8px">${state.calTab==='futuros'?'Adicione Termos de Adesão ou Renovações para ver eventos futuros.':'Eventos passados aparecerão aqui.'}</p></div>`;
+    return;
+  }
+  container.innerHTML = showEvents.map(ev => {
+    const daysUntil = Math.ceil((ev.date - now) / (1000*60*60*24)), isPast = daysUntil<0, isUrgent = !isPast && daysUntil<=30;
+    const badgeClass = isPast ? 'event-historico' : (isUrgent ? 'event-urgente' : 'event-pagamento');
+    const dateStr = ev.date.toLocaleDateString('pt-BR'), day = ev.date.getDate();
+    const monthNames = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'], month = monthNames[ev.date.getMonth()];
+    return `<div class="calendar-event-card" onclick="openOwnerDetail('${ev.ownerId}')" style="cursor:pointer"><div class="calendar-event-date">${day}<small>${month}</small></div><div class="calendar-event-info"><h4>${ev.label} de ${ev.ownerName}</h4><p>Matrícula${ev.matriculas.length>1?'s':''}: ${ev.matriculas.join(', ')} — ${dateStr} ${isPast?'(passado)':`(${daysUntil} dia${daysUntil!==1?'s':''})`}</p></div><span class="calendar-event-badge ${badgeClass}">${isPast?'📜 Histórico':(isUrgent?'⚠ Urgente':'💰 Pagamento')}</span></div>`;
+  }).join('');
 }
 
 // ===== SHAPES =====
 let selectedShapeType = '';
 
 function renderShapesList() {
-  const container = document.getElementById('shapesOwnerList');
-  const q = document.getElementById('searchShapes').value.toLowerCase();
-  let owners = state.owners;
-  if (q) owners = owners.filter(o=>o.name.toLowerCase().includes(q));
-
-  if (!owners.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📐</div><h3>${q?'Nenhum resultado':'Nenhum proprietário cadastrado'}</h3><p>Cadastre proprietários em "Editar Documentos" para gerenciar shapes.</p></div>`;
-    return;
-  }
-
-  container.innerHTML = `<div class="owner-grid">${owners.map(o=>{
-    const shapeCount = (o.shapes||[]).length;
-    return `<div class="owner-card" onclick="openShapesDetail('${o.id}')">
-      <div class="owner-card-header">
-        <div class="owner-avatar">${o.name.charAt(0)}</div>
-        <span class="phase-badge phase-${o.phase}">${o.phase}</span>
-      </div>
-      <h3>${o.name}</h3>
-      <div class="matriculas-count">${shapeCount} arquivo${shapeCount!==1?'s':''} de shape</div>
-      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-        ${['shape','kml','pdf_mapa','foto_mapa'].map(t=>{
-          const c = (o.shapes||[]).filter(s=>s.type===t).length;
-          if (!c) return '';
-          const icons = {shape:'📐',kml:'🌍',pdf_mapa:'🗺️',foto_mapa:'🖼️'};
-          return `<span style="font-size:12px;background:var(--surface-2);padding:3px 8px;border-radius:6px">${icons[t]} ${c}</span>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }).join('')}`;
+  const container = document.getElementById('shapesOwnerList'), q = document.getElementById('searchShapes').value.toLowerCase();
+  let owners = state.owners; if (q) owners = owners.filter(o=>o.name.toLowerCase().includes(q));
+  if (!owners.length) { container.innerHTML = `<div class="empty-state"><div class="empty-icon">📐</div><h3>${q?'Nenhum resultado':'Nenhum proprietário cadastrado'}</h3><p>Cadastre proprietários em "Editar Documentos" para gerenciar shapes.</p></div>`; return; }
+  container.innerHTML = `<div class="owner-grid">${owners.map(o=>{ const shapeCount = (o.shapes||[]).length; return `<div class="owner-card" onclick="openShapesDetail('${o.id}')"><div class="owner-card-header"><div class="owner-avatar">${o.name.charAt(0)}</div><span class="phase-badge phase-${o.phase}">${o.phase}</span></div><h3>${o.name}</h3><div class="matriculas-count">${shapeCount} shape${shapeCount!==1?'s':''}</div></div>`; }).join('')}`;
 }
 
-function openShapesDetail(id) {
-  const owner = state.owners.find(o=>o.id===id);
-  if (!owner) return;
-  state.currentOwnerId = id;
-  document.getElementById('shapesDetailOwnerName').textContent = owner.name;
-  renderShapesDetail(owner);
-  navigateTo('shapes-detail');
-}
+function openShapesDetail(id) { const owner = state.owners.find(o=>o.id===id); if (!owner) return; state.currentOwnerId = id; document.getElementById('shapesDetailOwnerName').textContent = owner.name; renderShapesDetail(owner); navigateTo('shapes-detail'); }
 
 function renderShapesDetail(owner) {
   const container = document.getElementById('shapesDetailContent');
   const shapes = owner.shapes||[];
-
-  if (!shapes.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📐</div><h3>Nenhum arquivo cadastrado</h3><p>Clique em "+ Adicionar Arquivo" para começar.</p></div>`;
-    return;
-  }
-
-  const categories = [
-    { key:'shape', label:'Shapes', icon:'📐' },
-    { key:'kml', label:'Arquivos KML', icon:'🌍' },
-    { key:'pdf_mapa', label:'PDFs de Mapa', icon:'🗺️' },
-    { key:'foto_mapa', label:'Fotos de Mapa', icon:'🖼️' },
-  ];
-
-  container.innerHTML = `<div class="shapes-categories">
-    ${categories.map(cat=>{
-      const catFiles = shapes.filter(s=>s.type===cat.key);
-      if (!catFiles.length) return '';
-      return `<div class="shapes-cat-card">
-        <div class="shapes-cat-header">
-          <span class="shapes-cat-icon">${cat.icon}</span>
-          <span class="shapes-cat-title">${cat.label}</span>
-          <span class="text-muted" style="margin-left:auto;font-size:12px">${catFiles.length} arquivo${catFiles.length>1?'s':''}</span>
-        </div>
-        <div class="shapes-cat-body">
-          <div class="shapes-file-list">
-            ${catFiles.map((s,si)=>`
-              <div class="shapes-file-item">
-                <span class="shapes-file-icon">${cat.icon}</span>
-                <div>
-                  <div class="shapes-file-name">${s.files.join(', ')}</div>
-                  <div class="shapes-file-date">${s.date}</div>
-                </div>
-                <div class="shapes-file-actions">
-                  <button class="btn btn-outline btn-sm" onclick="viewGenericDoc('${s.files[0]}')">👁 Ver</button>
-                  <button class="btn btn-outline btn-sm">⬇</button>
-                  <button class="btn btn-danger btn-sm" onclick="deleteShape('${owner.id}','${s.id||si}')">🗑</button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
+  if (!shapes.length) { container.innerHTML = `<div class="empty-state"><div class="empty-icon">📐</div><h3>Nenhum shape cadastrado</h3><p>Adicione shapes através do editor de proprietários.</p></div>`; return; }
+  container.innerHTML = renderShapeList(owner, false);
 }
 
 function openAddShapeModal() {
-  selectedShapeType = '';
-  tempFiles['shapeFileInput'] = [];
+  const owner = state.owners.find(o=>o.id===state.currentOwnerId);
+  if (!owner) return;
+  selectedShapeType = ''; tempFiles['shapeFileInput'] = [];
   document.getElementById('shapeFilesPreview').innerHTML = '';
-
-  const grid = document.getElementById('shapeTypeGrid');
-  grid.innerHTML = SHAPE_TYPES.map(st=>`
-    <div class="doc-type-option" onclick="selectShapeType('${st.key}',this)">
-      <span>${st.icon}</span> ${st.label}
-    </div>
-  `).join('');
+  document.getElementById('shapeMatricula').innerHTML = '<option value="">Selecione...</option>' + owner.matriculas.map(m=>`<option value="${m}">${m}</option>`).join('');
+  document.getElementById('shapeTypeGrid').innerHTML = SHAPE_TYPES.map(st=>`<div class="doc-type-option" onclick="selectShapeType('${st.key}',this)"><span>${st.icon}</span> ${st.label}</div>`).join('');
   openModal('modalAddShape');
 }
-function selectShapeType(key, el) {
-  selectedShapeType = key;
-  document.querySelectorAll('#shapeTypeGrid .doc-type-option').forEach(e=>e.classList.remove('selected'));
-  if(el) el.classList.add('selected');
-}
-function saveShape() {
+
+function selectShapeType(key, el) { selectedShapeType = key; document.querySelectorAll('#shapeTypeGrid .doc-type-option').forEach(e=>e.classList.remove('selected')); if(el) el.classList.add('selected'); }
+
+async function saveShape() {
+  const mat = document.getElementById('shapeMatricula').value;
+  if (!mat) { showToast('Selecione a matrícula', 'error'); return; }
   if (!selectedShapeType) { showToast('Selecione a categoria', 'error'); return; }
   const files = tempFiles['shapeFileInput']||[];
   if (!files.length) { showToast('Selecione pelo menos um arquivo', 'error'); return; }
-
   const owner = state.owners.find(o=>o.id===state.currentOwnerId);
   if (!owner) return;
   if (!owner.shapes) owner.shapes = [];
-  owner.shapes.push({
-    id: 's_'+Date.now(),
-    type: selectedShapeType,
-    files: files.map(f=>f.name),
-    date: new Date().toLocaleDateString('pt-BR'),
-  });
-  saveState();
-  closeModal('modalAddShape');
-  showToast('✅ Arquivo(s) de shape adicionado(s)!');
-  renderShapesDetail(owner);
+  const catFolder = sanitizeFolderName(selectedShapeType);
+  showLoading();
+  try {
+    for (const file of files) {
+      const ext = file.name.split('.').pop();
+      const newName = sanitizeFolderName(file.name);
+      const localPath = [sanitizeFolderName(owner.name), sanitizeFolderName(mat), 'Shapes', catFolder, newName];
+      const shapeEntry = {
+        id: 's_' + Date.now() + Math.random(),
+        type: selectedShapeType,
+        fileName: newName,
+        originalName: file.name,
+        date: new Date().toLocaleDateString('pt-BR'),
+        matricula: mat,
+        localPath
+      };
+      owner.shapes.push(shapeEntry);
+      if (_folderHandle) {
+        await saveFileToFolder(sanitizeFolderName(owner.name), [sanitizeFolderName(mat), 'Shapes', catFolder], file, newName);
+      }
+    }
+    saveState();
+    closeModal('modalAddShape');
+    showToast(`✅ ${files.length} shape(s) adicionado(s)!`);
+    renderOwnerEditor(owner);
+  } catch(e) {
+    showToast('Erro ao salvar shapes', 'error');
+  } finally {
+    hideLoading();
+  }
 }
-function deleteShape(ownerId, shapeId) {
-  if (!confirm('Excluir este arquivo?')) return;
+
+async function downloadShape(ownerId, idx) {
   const owner = state.owners.find(o=>o.id===ownerId);
-  owner.shapes = (owner.shapes||[]).filter((s,i)=>s.id!==shapeId && i.toString()!==shapeId);
+  if (!owner?.shapes?.[idx]) return;
+  const s = owner.shapes[idx];
+  if (s.localPath && _folderHandle) {
+    const file = await readFileFromPath(s.localPath);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a'); a.href = url; a.download = s.fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    } else showToast('Arquivo não encontrado', 'error');
+  } else showToast('Pasta não conectada', 'error');
+}
+
+function cleanupMapViewer() {
+  const container = document.getElementById('mapViewerContainer');
+  if (container && container._leaflet_id) {
+    const map = container._leaflet_map;
+    if (map) map.remove();
+  }
+}
+
+function cleanupMapAndClose() {
+  cleanupMapViewer();
+  closeModal('modalMapViewer');
+}
+
+// Dada a localPath de um .shp, varre a pasta pai em busca de todos os arquivos
+// companheiros (.dbf, .shx, .prj, .cpg…) com o mesmo nome base e os empacota
+// em um ZIP em memória, retornando um ArrayBuffer pronto para o shpjs.
+async function getShapeZipBuffer(pathParts) {
+  if (!_folderHandle || !pathParts?.length) return null;
+  // Navega até a pasta pai do arquivo
+  let dirHandle = _folderHandle;
+  try {
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      dirHandle = await dirHandle.getDirectoryHandle(sanitizeFolderName(pathParts[i]));
+    }
+  } catch(e) { return null; }
+
+  const fileName = pathParts[pathParts.length - 1];
+  const dotIdx = fileName.lastIndexOf('.');
+  const baseName = (dotIdx >= 0 ? fileName.substring(0, dotIdx) : fileName).toLowerCase();
+  const shapeExts = new Set(['shp', 'dbf', 'shx', 'prj', 'cpg', 'qpj', 'sbn', 'sbx', 'fix']);
+
+  const zip = new JSZip();
+  let foundShp = false;
+
+  try {
+    for await (const [name, handle] of dirHandle.entries()) {
+      if (handle.kind !== 'file') continue;
+      const nameLower = name.toLowerCase();
+      const lastDot = nameLower.lastIndexOf('.');
+      if (lastDot < 0) continue;
+      const fileBase = nameLower.substring(0, lastDot);
+      const fileExt  = nameLower.substring(lastDot + 1);
+      if (fileBase === baseName && shapeExts.has(fileExt)) {
+        const f = await handle.getFile();
+        zip.file(name, await f.arrayBuffer());
+        if (fileExt === 'shp') foundShp = true;
+      }
+    }
+  } catch(e) { return null; }
+
+  if (!foundShp) return null;
+  return await zip.generateAsync({ type: 'arraybuffer' });
+}
+
+// Carrega qualquer shape (KML, .zip já pronto ou .shp com siblings) e
+// retorna um layer Leaflet, ou null se o formato não for suportado.
+async function loadShapeAsLayer(s) {
+  if (!s.localPath) return null;
+  const ext = s.fileName.split('.').pop().toLowerCase();
+
+  if (ext === 'kml' || s.type === 'kml') {
+    const file = await readFileFromPath(s.localPath);
+    if (!file) return null;
+    const text = await file.text();
+    return new Promise(resolve => {
+      const kml = new L.KML(text);
+      kml.on('loaded', () => resolve(kml));
+      // fallback: se 'loaded' nunca disparar, resolve após 2s
+      setTimeout(() => resolve(kml), 2000);
+    });
+  }
+
+  if (ext === 'zip') {
+    const file = await readFileFromPath(s.localPath);
+    if (!file) return null;
+    const buffer = await file.arrayBuffer();
+    const geojson = await shp(buffer);
+    const layer = L.geoJSON(Array.isArray(geojson) ? geojson : [geojson], {
+      style: { color: '#0096C7', weight: 2, fillOpacity: 0.18 }
+    });
+    return layer;
+  }
+
+  if (ext === 'shp' || s.type === 'shape') {
+    // Empacota .shp + siblings em ZIP em memória e passa ao shpjs
+    const zipBuffer = await getShapeZipBuffer(s.localPath);
+    if (!zipBuffer) return null;
+    const geojson = await shp(zipBuffer);
+    const layer = L.geoJSON(Array.isArray(geojson) ? geojson : [geojson], {
+      style: { color: '#0096C7', weight: 2, fillOpacity: 0.18 }
+    });
+    return layer;
+  }
+
+  return null; // formato não geoespacial (PDF, imagem, etc.)
+}
+
+async function viewShapeOnMap(ownerId, idx) {
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner?.shapes?.[idx]) return;
+  const s = owner.shapes[idx];
+  if (!_folderHandle || !s.localPath) { showToast('Pasta não conectada', 'error'); return; }
+  cleanupMapViewer();
+  openModal('modalMapViewer');
+  document.getElementById('mapViewerTitle').textContent = s.fileName;
+  const container = document.getElementById('mapViewerContainer');
+  container.innerHTML = '';
+  showLoading();
+  setTimeout(async () => {
+    const map = L.map(container).setView([-26.2, -48.9], 13);
+    container._leaflet_map = map;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    try {
+      const layer = await loadShapeAsLayer(s);
+      if (!layer) {
+        showToast('Formato não suportado para visualização no mapa', 'error');
+        map.remove();
+        closeModal('modalMapViewer');
+        return;
+      }
+      layer.addTo(map);
+      try { map.fitBounds(layer.getBounds()); } catch(e) {}
+      map.invalidateSize();
+    } catch(e) {
+      console.error('Erro ao carregar shape:', e);
+      showToast('Erro ao carregar arquivo geoespacial: ' + (e.message || e), 'error');
+    } finally {
+      hideLoading();
+    }
+  }, 300);
+}
+
+async function viewAllShapesOnMap(ownerId, matricula) {
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner) return;
+  const shapes = (owner.shapes||[]).filter(s => s.matricula === matricula);
+  if (!shapes.length) { showToast('Nenhum shape para esta matrícula', 'error'); return; }
+  const geoShapes = shapes.filter(s => {
+    const ext = (s.fileName||'').split('.').pop().toLowerCase();
+    return s.type === 'kml' || s.type === 'shape' || ext === 'kml' || ext === 'shp' || ext === 'zip';
+  });
+  if (!geoShapes.length) { showToast('Nenhum shape geoespacial nesta matrícula', 'info'); return; }
+  if (!_folderHandle) { showToast('Pasta não conectada', 'error'); return; }
+  cleanupMapViewer();
+  openModal('modalMapViewer');
+  document.getElementById('mapViewerTitle').textContent = `Todos os shapes — ${matricula}`;
+  const container = document.getElementById('mapViewerContainer');
+  container.innerHTML = '';
+  showLoading();
+  try {
+    const map = L.map(container).setView([-26.2, -48.9], 13);
+    container._leaflet_map = map;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    const featureGroup = L.featureGroup();
+    let loaded = 0;
+    for (const s of geoShapes) {
+      try {
+        const layer = await loadShapeAsLayer(s);
+        if (layer) { featureGroup.addLayer(layer); loaded++; }
+      } catch(e) {
+        console.warn('Falha ao carregar shape', s.fileName, e);
+      }
+    }
+    if (!loaded) { showToast('Nenhum shape pôde ser carregado', 'error'); map.remove(); closeModal('modalMapViewer'); return; }
+    featureGroup.addTo(map);
+    setTimeout(() => {
+      try { const b = featureGroup.getBounds(); if (b.isValid()) map.fitBounds(b); } catch(e) {}
+      map.invalidateSize();
+    }, 600);
+  } catch(e) {
+    console.error('Erro ao carregar shapes:', e);
+    showToast('Erro ao carregar shapes', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function downloadAllShapesZip(ownerId, matricula) {
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner) return;
+  const shapes = (owner.shapes||[]).filter(s => s.matricula === matricula);
+  if (!shapes.length) { showToast('Nenhum shape para baixar', 'error'); return; }
+  if (!_folderHandle) { showToast('Pasta não conectada', 'error'); return; }
+  showLoading();
+  try {
+    const zip = new JSZip();
+    for (const s of shapes) {
+      if (!s.localPath) continue;
+      const file = await readFileFromPath(s.localPath);
+      if (file) zip.file(s.fileName, file);
+    }
+    const blob = await zip.generateAsync({type:'blob'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Shapes_${matricula}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`⬇ ZIP com shapes de ${matricula} baixado!`, 'info');
+  } catch(e) {
+    showToast('Erro ao criar ZIP', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function deleteShape(ownerId, idx) {
+  if (!confirm('Deseja mesmo apagar este shape?')) return;
+  const owner = state.owners.find(o=>o.id===ownerId);
+  if (!owner?.shapes?.[idx]) return;
+  const s = owner.shapes[idx];
+  if (s.localPath && _folderHandle) deleteFileFromPath(s.localPath);
+  owner.shapes.splice(idx,1);
   saveState();
-  renderShapesDetail(owner);
-  showToast('🗑️ Arquivo removido');
+  if (document.getElementById('page-shapes-detail').classList.contains('active')) {
+    renderShapesDetail(owner);
+  } else {
+    renderOwnerEditor(owner);
+  }
+  showToast('🗑️ Shape removido');
 }
 
 // ===== FILE HANDLING =====
-function handleFileChange(event, previewId) {
-  const files = Array.from(event.target.files);
-  const inputId = event.target.id;
-  if (!tempFiles[inputId]) tempFiles[inputId] = [];
-  tempFiles[inputId] = [...tempFiles[inputId], ...files];
-  renderFilesPreview(previewId, inputId);
-}
-
-function handleDrop(event, inputId, previewId) {
-  event.preventDefault();
-  event.currentTarget.classList.remove('dragover');
-  const files = Array.from(event.dataTransfer.files);
-  if (!tempFiles[inputId]) tempFiles[inputId] = [];
-  tempFiles[inputId] = [...tempFiles[inputId], ...files];
-  renderFilesPreview(previewId, inputId);
-}
+function handleFileChange(event, previewId) { const files = Array.from(event.target.files), inputId = event.target.id; if (!tempFiles[inputId]) tempFiles[inputId] = []; tempFiles[inputId] = [...tempFiles[inputId], ...files]; renderFilesPreview(previewId, inputId); }
+function handleDrop(event, inputId, previewId) { event.preventDefault(); event.currentTarget.classList.remove('dragover'); const files = Array.from(event.dataTransfer.files); if (!tempFiles[inputId]) tempFiles[inputId] = []; tempFiles[inputId] = [...tempFiles[inputId], ...files]; renderFilesPreview(previewId, inputId); }
 function handleDragOver(event) { event.preventDefault(); event.currentTarget.classList.add('dragover'); }
 function handleDragLeave(event) { event.currentTarget.classList.remove('dragover'); }
-
-function renderFilesPreview(previewId, inputId) {
-  const container = document.getElementById(previewId);
-  const files = tempFiles[inputId]||[];
-  container.innerHTML = files.map((f,i)=>`
-    <div class="file-preview-item">
-      <span>${getFileIcon(f.name)}</span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
-      <span class="file-size">${formatBytes(f.size)}</span>
-      <span class="remove-file" onclick="removeFile('${inputId}','${previewId}',${i})">✕</span>
-    </div>
-  `).join('');
-}
-function removeFile(inputId, previewId, idx) {
-  tempFiles[inputId].splice(idx,1);
-  renderFilesPreview(previewId, inputId);
-}
-function getFileIcon(name) {
-  const ext = name.split('.').pop().toLowerCase();
-  const map = {pdf:'📑',doc:'📝',docx:'📝',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',kml:'🌍',shp:'📐',zip:'🗜️',xlsx:'📊',xls:'📊'};
-  return map[ext]||'📄';
-}
-function formatBytes(b) {
-  if (b<1024) return b+'B';
-  if (b<1048576) return (b/1024).toFixed(1)+'KB';
-  return (b/1048576).toFixed(1)+'MB';
-}
+function renderFilesPreview(previewId, inputId) { const container = document.getElementById(previewId), files = tempFiles[inputId]||[]; container.innerHTML = files.map((f,i)=>`<div class="file-preview-item"><span>${getFileIcon(f.name)}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span><span class="file-size">${formatBytes(f.size)}</span><span class="remove-file" onclick="removeFile('${inputId}','${previewId}',${i})">✕</span></div>`).join(''); }
+function removeFile(inputId, previewId, idx) { tempFiles[inputId].splice(idx,1); renderFilesPreview(previewId, inputId); }
+function getFileIcon(name) { const ext = name.split('.').pop().toLowerCase(); const map = {pdf:'📑',doc:'📝',docx:'📝',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',kml:'🌍',shp:'📐',zip:'🗜️',xlsx:'📊',xls:'📊'}; return map[ext]||'📄'; }
+function formatBytes(b) { if (b<1024) return b+'B'; if (b<1048576) return (b/1024).toFixed(1)+'KB'; return (b/1048576).toFixed(1)+'MB'; }
 
 // ===== MODALS =====
 function openModal(id) { document.getElementById(id).style.display = 'flex'; }
@@ -2555,34 +3772,258 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function handleOverlayClick(e, id) { if (e.target === e.currentTarget) closeModal(id); }
 
 // ===== TOAST =====
-function showToast(msg, type='success') {
-  const c = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  t.className = `toast${type==='error'?' error':type==='info'?' info':''}`;
-  t.innerHTML = msg;
-  c.appendChild(t);
-  setTimeout(()=>t.remove(), 3500);
-}
+function showToast(msg, type='success') { const c = document.getElementById('toastContainer'), t = document.createElement('div'); t.className = `toast${type==='error'?' error':type==='info'?' info':''}`; t.innerHTML = msg; c.appendChild(t); setTimeout(()=>t.remove(), 3500); }
 
-// ===== INIT ADD OWNER MODAL =====
-document.getElementById('modalAddOwner').addEventListener('click', function(){}, false);
-// reset form on open
-const origOpenModal = openModal;
-
-// Reset add-owner form state
+// ===== RESET ADD OWNER FORM =====
 function resetAddOwnerForm() {
   document.getElementById('modalAddOwnerTitle').textContent = 'Novo Proprietário';
-  document.getElementById('ownerNameInput').value = '';
-  selectedPhase = '';
-  editingOwnerId = null;
+  document.getElementById('ownerNameInput').value = ''; selectedPhase = ''; editingOwnerId = null;
   document.querySelectorAll('.radio-option').forEach(el=>el.className='radio-option');
   document.getElementById('matriculasList').innerHTML = `<div class="matricula-item"><input type="text" class="form-input" placeholder="Número da matrícula"></div>`;
+  document.getElementById('renewalNumberGroup').style.display = 'none'; document.getElementById('renewalNumberInput').value = '0';
 }
 
-// Patch for add owner button on editar page
-document.querySelector('[onclick="openModal(\'modalAddOwner\')"]')?.addEventListener('click', resetAddOwnerForm);
+// ===== DOC SEARCH MODAL =====
+function openDocSearchModal() {
+  const select = document.getElementById('docSearchType');
+  select.innerHTML = '<option value="">Todos os tipos...</option>' + DOC_TYPES.map(dt => `<option value="${dt.key}">${dt.label}</option>`).join('');
+  select.value = '';
+  renderDocSearchList();
+  openModal('modalDocSearch');
+}
 
-// ensure home card does the same
+function renderDocSearchList() {
+  const container = document.getElementById('docSearchList');
+  const filterType = document.getElementById('docSearchType').value;
+  const allDocs = [];
+  state.owners.forEach(owner => {
+    const mats = owner.matriculas||[];
+    mats.forEach(mat => {
+      const matDocs = (owner.docs||{})[mat]||[];
+      matDocs.forEach(doc => {
+        if (filterType && doc.type !== filterType) return;
+        allDocs.push({ owner, mat, doc });
+      });
+    });
+  });
+  if (!allDocs.length) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Nenhum documento encontrado.</div>';
+    return;
+  }
+  container.innerHTML = allDocs.map((item, idx) => {
+    const label = item.doc.customName || (DOC_TYPES.find(d=>d.key===item.doc.type)?.label || item.doc.type);
+    const dateStr = item.doc.date ? new Date(item.doc.date).toLocaleDateString('pt-BR') : '—';
+    return `<div class="doc-search-item" onclick="toggleDocSearchItem(this)" data-idx="${idx}">
+      <input type="checkbox" onchange="event.stopPropagation(); updateDocSearchSelection(this, ${idx})">
+      <span>${DOC_TYPES.find(d=>d.key===item.doc.type)?.icon || '📄'}</span>
+      <div class="doc-search-item-info">
+        <div class="doc-search-item-name">${label} — ${item.owner.name}</div>
+        <div class="doc-search-item-sub">Matrícula ${item.mat} · ${dateStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+  window._docSearchItems = allDocs;
+}
+
+function toggleDocSearchItem(el) {
+  const cb = el.querySelector('input[type=checkbox]');
+  cb.checked = !cb.checked;
+  el.classList.toggle('selected', cb.checked);
+}
+
+function updateDocSearchSelection(cb, idx) {
+  const el = cb.closest('.doc-search-item');
+  if (el) el.classList.toggle('selected', cb.checked);
+}
+
+function selectAllDocSearch(checked) {
+  const items = document.querySelectorAll('#docSearchList .doc-search-item');
+  items.forEach(item => {
+    const cb = item.querySelector('input[type=checkbox]');
+    cb.checked = checked;
+    item.classList.toggle('selected', checked);
+  });
+}
+
+async function downloadSelectedDocs() {
+  const allItems = document.querySelectorAll('#docSearchList .doc-search-item');
+  const selectedIndices = [];
+  allItems.forEach((item, i) => {
+    if (item.querySelector('input[type=checkbox]').checked) selectedIndices.push(i);
+  });
+  if (!selectedIndices.length) { showToast('Selecione ao menos um documento', 'error'); return; }
+  if (!_folderHandle) { showToast('Pasta não conectada', 'error'); return; }
+  const docsToDownload = selectedIndices.map(i => window._docSearchItems[i]).filter(Boolean);
+  showLoading();
+  try {
+    const zip = new JSZip();
+    for (const { owner, mat, doc } of docsToDownload) {
+      if (!doc.localPath) continue;
+      const file = await readFileFromPath(doc.localPath);
+      if (!file) continue;
+      const ext = (doc.fileName||'').split('.').pop();
+      const label = doc.customName || (DOC_TYPES.find(d=>d.key===doc.type)?.label || doc.type);
+      const zipName = sanitizeFolderName(`${label}_${mat}.${ext}`);
+      zip.file(zipName, file);
+    }
+    const blob = await zip.generateAsync({type:'blob'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Documentos_Selecionados.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('⬇ ZIP com documentos selecionados baixado!', 'info');
+  } catch(e) {
+    showToast('Erro ao baixar documentos', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// ===== GRAFICOS =====
+let chartInstances = {};
+
+function destroyChart(key) {
+  if (chartInstances[key]) { chartInstances[key].destroy(); delete chartInstances[key]; }
+}
+
+function renderGraficos() {
+  Object.keys(chartInstances).forEach(destroyChart);
+
+  // 1. Proprietários por Fase
+  const phaseCounts = { Interessado: 0, Manifesto: 0, Negociação: 0, Adesão: 0 };
+  state.owners.forEach(o => { if (phaseCounts.hasOwnProperty(o.phase)) phaseCounts[o.phase]++; });
+  const phaseLabels = Object.keys(phaseCounts);
+  const phaseData = Object.values(phaseCounts);
+  const phaseCtx = document.getElementById('chartFases').getContext('2d');
+  chartInstances['fases'] = new Chart(phaseCtx, {
+    type: 'bar',
+    data: {
+      labels: phaseLabels,
+      datasets: [{
+        label: 'Proprietários',
+        data: phaseData,
+        backgroundColor: ['#2563EB','#16A34A','#D97706','#9333EA'],
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // 2. Proprietários por Número de Renovações
+  const renoMap = new Map();
+  state.owners.forEach(o => {
+    let maxR = 0;
+    Object.values(o.renovacoes||{}).forEach(arr => { if (arr.length > maxR) maxR = arr.length; });
+    renoMap.set(maxR, (renoMap.get(maxR)||0) + 1);
+  });
+  const renoEntries = Array.from(renoMap.entries()).sort((a,b)=>a[0]-b[0]);
+  const renoLabels = renoEntries.map(([k])=>`${k} renov.`);
+  const renoData = renoEntries.map(([,v])=>v);
+  const renoCtx = document.getElementById('chartRenovacoes').getContext('2d');
+  chartInstances['renovacoes'] = new Chart(renoCtx, {
+    type: 'bar',
+    data: {
+      labels: renoLabels,
+      datasets: [{
+        label: 'Proprietários',
+        data: renoData,
+        backgroundColor: '#00B4D8',
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // 3. Quantidade de matrículas por proprietário
+  const matCountMap = new Map();
+  state.owners.forEach(o => {
+    const cnt = (o.matriculas||[]).length;
+    matCountMap.set(cnt, (matCountMap.get(cnt)||0) + 1);
+  });
+  const matEntries = Array.from(matCountMap.entries()).sort((a,b)=>a[0]-b[0]);
+  const matLabels = matEntries.map(([k])=>`${k} mat.`);
+  const matData = matEntries.map(([,v])=>v);
+  const matCtx = document.getElementById('chartMatriculas').getContext('2d');
+  chartInstances['matriculas'] = new Chart(matCtx, {
+    type: 'bar',
+    data: {
+      labels: matLabels,
+      datasets: [{
+        label: 'Proprietários',
+        data: matData,
+        backgroundColor: '#2CB87A',
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // 4. Pagamentos por Ano
+  const pagPorAno = {};
+  state.owners.forEach(owner => {
+    (owner.matriculas||[]).forEach(mat => {
+      const matDocs = (owner.docs||{})[mat]||[];
+      matDocs.forEach(doc => {
+        if (doc.type === 'termo_adesao' && doc.signatureDate) {
+          const ano = new Date(doc.signatureDate+'T00:00:00').getFullYear() + 1;
+          pagPorAno[ano] = (pagPorAno[ano]||0) + 1;
+        }
+      });
+      const renovacoes = getRenovacoesArray(owner, mat);
+      renovacoes.forEach(ren => {
+        if (ren.renewalDate) {
+          const ano = new Date(ren.renewalDate+'T00:00:00').getFullYear() + 1;
+          pagPorAno[ano] = (pagPorAno[ano]||0) + 1;
+        }
+      });
+    });
+  });
+  const pagAnos = Object.keys(pagPorAno).sort();
+  const pagData = pagAnos.map(a => pagPorAno[a]);
+  const pagCtx = document.getElementById('chartPagamentos').getContext('2d');
+  chartInstances['pagamentos'] = new Chart(pagCtx, {
+    type: 'line',
+    data: {
+      labels: pagAnos,
+      datasets: [{
+        label: 'Pagamentos',
+        data: pagData,
+        borderColor: '#F4A228',
+        backgroundColor: 'rgba(244,162,40,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+}
+
+// Inicializa a página inicial
+renderConsultarList();
 </script>
 
 </body>
