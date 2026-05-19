@@ -1553,14 +1553,21 @@ body {
       <div class="chart-card">
         <div class="chart-card-header">
           <h3>Proprietários por Fase</h3>
-          <p>Distribuição atual das fases dos proprietários</p>
+          <p>Quantidade de proprietários em cada fase</p>
         </div>
         <div class="chart-canvas-wrap"><canvas id="chartFases"></canvas></div>
       </div>
       <div class="chart-card">
         <div class="chart-card-header">
+          <h3>Propriedades por Fase</h3>
+          <p>Quantidade de matrículas (propriedades) em cada fase</p>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="chartFasesPropriedades"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
           <h3>Proprietários por Número de Renovações</h3>
-          <p>Quantos proprietários têm 0, 1, 2 ou mais renovações</p>
+          <p>Quantos proprietários têm 0, 1, 2 ou mais renovações — <span style="color:var(--accent);font-weight:600">clique nas colunas para ver matrículas</span></p>
         </div>
         <div class="chart-canvas-wrap"><canvas id="chartRenovacoes"></canvas></div>
       </div>
@@ -3893,7 +3900,7 @@ function destroyChart(key) {
 function renderGraficos() {
   Object.keys(chartInstances).forEach(destroyChart);
 
-  // 1. Proprietários por Fase
+  // 1a. Proprietários por Fase
   const phaseCounts = { Interessado: 0, Manifesto: 0, Negociação: 0, Adesão: 0 };
   state.owners.forEach(o => { if (phaseCounts.hasOwnProperty(o.phase)) phaseCounts[o.phase]++; });
   const phaseLabels = Object.keys(phaseCounts);
@@ -3918,16 +3925,48 @@ function renderGraficos() {
     }
   });
 
-  // 2. Proprietários por Número de Renovações
-  const renoMap = new Map();
+  // 1b. Propriedades (matrículas) por Fase
+  const phaseMatCounts = { Interessado: 0, Manifesto: 0, Negociação: 0, Adesão: 0 };
   state.owners.forEach(o => {
-    let maxR = 0;
-    Object.values(o.renovacoes||{}).forEach(arr => { if (arr.length > maxR) maxR = arr.length; });
-    renoMap.set(maxR, (renoMap.get(maxR)||0) + 1);
+    if (phaseMatCounts.hasOwnProperty(o.phase)) {
+      phaseMatCounts[o.phase] += (o.matriculas||[]).length;
+    }
   });
-  const renoEntries = Array.from(renoMap.entries()).sort((a,b)=>a[0]-b[0]);
+  const phaseMatData = Object.values(phaseMatCounts);
+  const phaseMatCtx = document.getElementById('chartFasesPropriedades').getContext('2d');
+  chartInstances['fasesPropriedades'] = new Chart(phaseMatCtx, {
+    type: 'bar',
+    data: {
+      labels: phaseLabels,
+      datasets: [{
+        label: 'Propriedades',
+        data: phaseMatData,
+        backgroundColor: ['#2563EB','#16A34A','#D97706','#9333EA'],
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // 2. Proprietários por Número de Renovações (com drill-down ao clicar)
+  // Monta mapa: numRenovacoes -> [{ ownerName, matricula }]
+  const renoDetailsMap = new Map(); // numRenovacoes -> [{ownerName, matricula}]
+  state.owners.forEach(o => {
+    (o.matriculas||[]).forEach(mat => {
+      const renArr = (o.renovacoes||{})[mat] || [];
+      const numR = renArr.length;
+      if (!renoDetailsMap.has(numR)) renoDetailsMap.set(numR, []);
+      renoDetailsMap.get(numR).push({ ownerName: o.name, matricula: mat });
+    });
+  });
+  const renoEntries = Array.from(renoDetailsMap.entries()).sort((a,b)=>a[0]-b[0]);
   const renoLabels = renoEntries.map(([k])=>`${k} renov.`);
-  const renoData = renoEntries.map(([,v])=>v);
+  const renoData = renoEntries.map(([,v])=>v.length);
   const renoCtx = document.getElementById('chartRenovacoes').getContext('2d');
   chartInstances['renovacoes'] = new Chart(renoCtx, {
     type: 'bar',
@@ -3937,14 +3976,31 @@ function renderGraficos() {
         label: 'Proprietários',
         data: renoData,
         backgroundColor: '#00B4D8',
+        hoverBackgroundColor: '#0096C7',
         borderRadius: 8
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            footer: () => 'Clique para ver matrículas'
+          }
+        }
+      },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const idx = elements[0].index;
+        const [numR, items] = renoEntries[idx];
+        openRenoDetailModal(numR, items);
+      },
+      onHover: (evt, elements) => {
+        evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
     }
   });
 
@@ -4022,9 +4078,49 @@ function renderGraficos() {
   });
 }
 
+// ===== RENOVAÇÕES DRILL-DOWN MODAL =====
+function openRenoDetailModal(numR, items) {
+  const title = numR === 0
+    ? 'Matrículas sem renovação (0 renovações)'
+    : `Matrículas com ${numR} renovação${numR > 1 ? 'ões' : ''}`;
+  document.getElementById('modalRenoDetailTitle').textContent = title;
+  const list = document.getElementById('modalRenoDetailList');
+  if (!items || !items.length) {
+    list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:16px">Nenhuma matrícula encontrada.</div>';
+  } else {
+    list.innerHTML = items.map(item => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border-radius:10px;border:1px solid var(--border);">
+        <span style="font-size:20px">📋</span>
+        <div>
+          <div style="font-weight:600;font-size:14px;color:var(--dark)">Matrícula ${item.matricula}</div>
+          <div style="font-size:12.5px;color:var(--muted)">${item.ownerName}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  openModal('modalRenoDetail');
+}
+
 // Inicializa a página inicial
 renderConsultarList();
 </script>
+
+
+<!-- Renovações Drill-down Modal -->
+<div class="modal-overlay" id="modalRenoDetail" style="display:none" onclick="handleOverlayClick(event,'modalRenoDetail')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalRenoDetailTitle">Matrículas</h3>
+      <button class="btn-close" onclick="closeModal('modalRenoDetail')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalRenoDetailList" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalRenoDetail')">Fechar</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
